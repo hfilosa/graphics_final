@@ -54,6 +54,9 @@ void draw_polygons( struct matrix *polygons, screen s, color c ) {
   for( i=0; i < polygons->lastcol-2; i+=3 ) {
 
     if ( calculate_dot( polygons, i ) < 0 ) {
+      if (polygons->m[1][i] >= polygons->m[1][i+1]){
+	if (polygons->m[1][i+1]>polygons->m[0][i+2]){
+	  
       draw_line( polygons->m[0][i],
 		 polygons->m[1][i],
 		 polygons->m[0][i+1],
