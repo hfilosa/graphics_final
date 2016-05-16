@@ -1,0 +1,30 @@
+basename heart
+frames 90
+
+push
+move 250 250 0
+rotate y 360 knob1
+rotate x 360 knob2
+move 0 0 100
+
+//left side
+push
+move -250 160 0
+box 0 0 0 160 160 200
+move 0 -160 0
+rotate z 45
+box 0 0 0 226.24 353.55 200
+pop
+
+push
+//Right side
+move 90 160 0
+push
+box 0 0 0 160 160 200
+rotate z -45
+box 0 0 0 226.24 353.55 200
+pop
+
+
+vary knob1 0 80 0 1
+vary knob2 0 80 0 1
