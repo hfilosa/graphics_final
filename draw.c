@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 
 #include "ml6.h"
 #include "display.h"
@@ -49,14 +50,56 @@ triangles
 jdyrlandweaver
 ====================*/
 void draw_polygons( struct matrix *polygons, screen s, color c ) {
-  
-  int i;  
+  int i,j;  
+  int left,right;
+  double xb,yb,xt,yt,xm,ym;
+  //The bottom to top x increment (bt), bottom to middle(bm), middle to top(mt)
+  double bt_inc,bm_inc,mt_inc;
   for( i=0; i < polygons->lastcol-2; i+=3 ) {
-
+    //Figure our which points are the top,bottom and middle
     if ( calculate_dot( polygons, i ) < 0 ) {
-      if (polygons->m[1][i] >= polygons->m[1][i+1]){
-	if (polygons->m[1][i+1]>polygons->m[0][i+2]){
-	  
+      xt=polygons->m[0][i];
+      yt=polygons->m[1][i];
+      for (j=1;j<3;j++){
+	if (polygons->m[1][i+j] > yt){
+	  xt=polygons->m[0][i+j];
+	  yt=polygons->m[1][i+j];
+	}
+      }
+      xb=polygons->m[0][i];
+      yb=polygons->m[1][i];
+      for (j=1;j<3;j++){
+	if (polygons->m[1][i+j] <= yb){
+	  xb=polygons->m[0][i+j];
+	  yb=polygons->m[1][i+j];
+	}
+      }
+      for (j=0;j<3;j++){
+	if (polygons->m[1][i+j] <= yt && polygons->m[1][i+j] >= yb){
+	  xm=polygons->m[0][i+j];
+	  ym=polygons->m[1][i+j];
+	}
+      }
+      bt_inc=(xt-xb)/(yt-yb);
+      bm_inc=(xm-xb)/(ym-yb);
+      mt_inc=(xt-xm)/(yt-ym);
+      left=0;
+      right=0;
+      int first=1;
+      c.green=rand()%255;
+      c.red=rand()%255;
+      c.blue=rand()%255;
+      while (yb<yt){
+	draw_line(xb+left*bt_inc,yb,xb+right*bm_inc,yb,s,c);
+	yb+=1;
+	right+=1;
+	left+=1;
+	if (y>=ym && first){
+	  first=0;
+	  right=0;
+	  bm_inc=mt_inc;
+	}
+      }
       draw_line( polygons->m[0][i],
 		 polygons->m[1][i],
 		 polygons->m[0][i+1],
