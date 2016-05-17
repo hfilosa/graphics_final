@@ -50,8 +50,8 @@ triangles
 jdyrlandweaver
 ====================*/
 void draw_polygons( struct matrix *polygons, screen s, color c ) {
-  int i,j;  
-  int left,right;
+  int i,j,b;
+  int magic_num;
   double xb,yb,xt,yt,xm,ym;
   //The bottom to top x increment (bt), bottom to middle(bm), middle to top(mt)
   double bt_inc,bm_inc,mt_inc;
@@ -60,45 +60,63 @@ void draw_polygons( struct matrix *polygons, screen s, color c ) {
     if ( calculate_dot( polygons, i ) < 0 ) {
       xt=polygons->m[0][i];
       yt=polygons->m[1][i];
-      for (j=1;j<3;j++){
-	if (polygons->m[1][i+j] > yt){
-	  xt=polygons->m[0][i+j];
-	  yt=polygons->m[1][i+j];
-	}
-      }
       xb=polygons->m[0][i];
       yb=polygons->m[1][i];
+      b=0;
+      magic_num=0;
+      for (j=1;j<3;j++){
+	if (polygons->m[1][i+j] >= yt){
+	  xt=polygons->m[0][i+j];
+	  yt=polygons->m[1][i+j];
+	  b=j;
+	}
+      }
+      magic_num+=b;
+      b=0;
+      printf("magic_num:%d\n",magic_num);
       for (j=1;j<3;j++){
 	if (polygons->m[1][i+j] <= yb){
 	  xb=polygons->m[0][i+j];
 	  yb=polygons->m[1][i+j];
+	  b=j;
 	}
       }
-      for (j=0;j<3;j++){
-	if (polygons->m[1][i+j] <= yt && polygons->m[1][i+j] >= yb){
-	  xm=polygons->m[0][i+j];
-	  ym=polygons->m[1][i+j];
-	}
+      magic_num+=b;
+      printf("magic_num:%d\n",magic_num);
+      magic_num=3-magic_num;
+      printf("magic_num:%d\n",magic_num);
+      xm=polygons->m[0][i+magic_num];
+      ym=polygons->m[1][i+magic_num];
+      if (yt == yb)
+	bt_inc=0;
+      else
+	bt_inc=(xt-xb)/(yt-yb);
+      if (yt == ym)
+	mt_inc=0;
+      else
+	mt_inc=(xt-xm)/(yt-ym);
+      if (ym == yb)
+	bm_inc=0;
+      else{
+	bm_inc=(xm-xb)/(ym-yb);
+	xm=xb;
       }
-      bt_inc=(xt-xb)/(yt-yb);
-      bm_inc=(xm-xb)/(ym-yb);
-      mt_inc=(xt-xm)/(yt-ym);
-      left=0;
-      right=0;
       int first=1;
       c.green=rand()%255;
       c.red=rand()%255;
       c.blue=rand()%255;
+      printf("starting to fill in polyon\nYB:%f YM:%f YT:%f\n",yb,ym,yt);
+      printf("XB:%f XM:%f XT:%f\n",xb,xm,xt);
+      printf("bt_inc:%f bm_inc:%f mt_inc%f\n\n",bt_inc,bm_inc,mt_inc);
       while (yb<yt){
-	draw_line(xb+left*bt_inc,yb,xb+right*bm_inc,yb,s,c);
-	yb+=1;
-	right+=1;
-	left+=1;
-	if (y>=ym && first){
+	draw_line(xb,yb,xm,yb,s,c);
+	xb+=bt_inc;
+	xm+=bm_inc;
+	if (yb>=ym && first){
 	  first=0;
-	  right=0;
 	  bm_inc=mt_inc;
 	}
+	yb+=1;
       }
       draw_line( polygons->m[0][i],
 		 polygons->m[1][i],
