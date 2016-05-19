@@ -5,6 +5,10 @@ CC= gcc
 
 all: parser
 
+run:
+	./mdl heart.mdl
+	animate -delay 10 anim/heart0*
+
 parser: lex.yy.c y.tab.c y.tab.h $(OBJECTS)
 	gcc -o mdl $(CFLAGS) lex.yy.c y.tab.c $(OBJECTS) $(LDFLAGS)
 

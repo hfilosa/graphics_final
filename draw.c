@@ -49,7 +49,7 @@ triangles
 04/16/13 13:13:27
 jdyrlandweaver
 ====================*/
-void draw_polygons( struct matrix *polygons, screen s, color c ) {
+void draw_polygons( struct matrix *polygons, screen s, zbuff z, color c ) {
   int i,j,b;
   int magic_num;
   double xb,yb,xt,yt,xm,ym;
@@ -87,34 +87,40 @@ void draw_polygons( struct matrix *polygons, screen s, color c ) {
       printf("magic_num:%d\n",magic_num);
       xm=polygons->m[0][i+magic_num];
       ym=polygons->m[1][i+magic_num];
-      if (yt == yb)
-	bt_inc=0;
-      else
+      // if (yt == yb)
+	//	bt_inc=0;
+      //  else
 	bt_inc=(xt-xb)/(yt-yb);
-      if (yt == ym)
-	mt_inc=0;
-      else
+      //if (yt == ym)
+	//	mt_inc=0;
+      //else
 	mt_inc=(xt-xm)/(yt-ym);
-      if (ym == yb)
-	bm_inc=0;
-      else{
+      // if (ym == yb)
+      //	bm_inc=0;
+      // else
 	bm_inc=(xm-xb)/(ym-yb);
-	xm=xb;
-      }
-      int first=1;
       c.green=rand()%255;
       c.red=rand()%255;
       c.blue=rand()%255;
       printf("starting to fill in polyon\nYB:%f YM:%f YT:%f\n",yb,ym,yt);
       printf("XB:%f XM:%f XT:%f\n",xb,xm,xt);
-      printf("bt_inc:%f bm_inc:%f mt_inc%f\n\n",bt_inc,bm_inc,mt_inc);
+      printf("bt_inc:%f bm_inc:%f mt_inc:%f\n\n",bt_inc,bm_inc,mt_inc);
+      double left_x=xb;
+      double right_x=xb;
+      int passed_middle=0;
       while (yb<yt){
-	draw_line(xb,yb,xm,yb,s,c);
-	xb+=bt_inc;
-	xm+=bm_inc;
-	if (yb>=ym && first){
-	  first=0;
-	  bm_inc=mt_inc;
+	if (!passed_middle && yb>=ym){
+	  right_x=xm;
+	  passed_middle=1;
+	}
+	draw_line(left_x,yb,right_x,yb,s,c);
+	if (yb>=ym){
+	  left_x+=bt_inc;
+	  right_x+=mt_inc;
+	}
+	else{
+	  left_x+=bt_inc;
+	  right_x+=bm_inc;
 	}
 	yb+=1;
       }

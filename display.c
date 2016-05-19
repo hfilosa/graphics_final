@@ -103,6 +103,23 @@ void clear_screen( screen s ) {
       s[x][y] = c;
 }
 
+/*======== void clear_zbuff() ==========
+Inputs:   zbuff z  
+Returns: 
+Sets the values of the zbuffer to the minimum z value
+
+05/19/16 02:04:40
+Henry Filosa
+====================*/
+void clear_zbuff( zbuff z ) {
+
+  int x,y;
+
+  for ( y=0; y < YRES; y++ )
+    for ( x=0; x < XRES; x++)      
+      z[x][y] = MIN_Z;
+}
+
 /*======== void save_ppm() ==========
 Inputs:   screen s
          char *file 

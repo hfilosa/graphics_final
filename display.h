@@ -6,6 +6,7 @@ void clear_screen( screen s);
 void save_ppm( screen s, char *file);
 void save_extension( screen s, char *file);
 void display( screen s);
+void clear_zbuff(zbuff z);
 
 color change_color( int i );
 #endif

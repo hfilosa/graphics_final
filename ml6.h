@@ -13,6 +13,8 @@ a pixel as a color triple
 
 #define XRES 500
 #define YRES 500
+//The smallest value allowed in the z buffer
+#define MIN_Z -100000
 #define MAX_COLOR 255
 
 /*
@@ -44,5 +46,11 @@ typedef struct point_t color;
   s[0][0] = c;
 */
 typedef struct point_t screen[XRES][YRES];
+
+typedef double zbuff[XRES][YRES];
+
+/*
+  A buffer to figure out which points are the closest to us on the z axis
+*/
 
 #endif
