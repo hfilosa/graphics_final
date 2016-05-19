@@ -49,25 +49,30 @@ triangles
 04/16/13 13:13:27
 jdyrlandweaver
 ====================*/
-void draw_polygons( struct matrix *polygons, screen s, zbuff z, color c ) {
+void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, color c ) {
   int i,j,b;
   int magic_num;
-  double xb,yb,xt,yt,xm,ym;
+  double xb,yb,zb, xt,yt,zt, xm,ym,zm;
   //The bottom to top x increment (bt), bottom to middle(bm), middle to top(mt)
   double bt_inc,bm_inc,mt_inc;
+  //The increment along the z axis
+  double bt_z,bm_z,mt_z;
   for( i=0; i < polygons->lastcol-2; i+=3 ) {
     //Figure our which points are the top,bottom and middle
     if ( calculate_dot( polygons, i ) < 0 ) {
       xt=polygons->m[0][i];
       yt=polygons->m[1][i];
+      zt=polygons->m[2][i];
       xb=polygons->m[0][i];
       yb=polygons->m[1][i];
+      zb=polygons->m[2][i];
       b=0;
       magic_num=0;
       for (j=1;j<3;j++){
 	if (polygons->m[1][i+j] >= yt){
 	  xt=polygons->m[0][i+j];
 	  yt=polygons->m[1][i+j];
+	  zt=polygons->m[2][i+j];
 	  b=j;
 	}
       }
@@ -78,6 +83,7 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff z, color c ) {
 	if (polygons->m[1][i+j] <= yb){
 	  xb=polygons->m[0][i+j];
 	  yb=polygons->m[1][i+j];
+	  zb=polygons->m[2][i+j];
 	  b=j;
 	}
       }
@@ -87,58 +93,70 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff z, color c ) {
       printf("magic_num:%d\n",magic_num);
       xm=polygons->m[0][i+magic_num];
       ym=polygons->m[1][i+magic_num];
-      // if (yt == yb)
-	//	bt_inc=0;
-      //  else
-	bt_inc=(xt-xb)/(yt-yb);
-      //if (yt == ym)
-	//	mt_inc=0;
-      //else
-	mt_inc=(xt-xm)/(yt-ym);
-      // if (ym == yb)
-      //	bm_inc=0;
-      // else
-	bm_inc=(xm-xb)/(ym-yb);
+      zm=polygons->m[2][i+magic_num];
+    
+      bt_inc=(xt-xb)/(yt-yb);
+      mt_inc=(xt-xm)/(yt-ym);
+      bm_inc=(xm-xb)/(ym-yb);
+
+      bt_z=(zt-zb)/(yt-yb);
+      mt_z=(zt-zm)/(yt-ym);
+      bm_z=(zm-zb)/(ym-yb);
+
       c.green=rand()%255;
       c.red=rand()%255;
       c.blue=rand()%255;
+      
       printf("starting to fill in polyon\nYB:%f YM:%f YT:%f\n",yb,ym,yt);
       printf("XB:%f XM:%f XT:%f\n",xb,xm,xt);
       printf("bt_inc:%f bm_inc:%f mt_inc:%f\n\n",bt_inc,bm_inc,mt_inc);
       double left_x=xb;
       double right_x=xb;
+      double left_z=zb;
+      double right_z=zb;
       int passed_middle=0;
       while (yb<yt){
 	if (!passed_middle && yb>=ym){
 	  right_x=xm;
+	  right_z=zm;
 	  passed_middle=1;
 	}
-	draw_line(left_x,yb,right_x,yb,s,c);
+	draw_line(left_x,yb,left_z, right_x,yb,right_z, s,zbuf,c);
 	if (yb>=ym){
 	  left_x+=bt_inc;
+	  left_z+=bt_z;
 	  right_x+=mt_inc;
+	  right_z+=mt_z;
 	}
 	else{
 	  left_x+=bt_inc;
+	  left_z+=bt_z;
 	  right_x+=bm_inc;
+	  right_z+=bm_z;
 	}
 	yb+=1;
       }
       draw_line( polygons->m[0][i],
 		 polygons->m[1][i],
+		 polygons->m[2][i],
 		 polygons->m[0][i+1],
 		 polygons->m[1][i+1],
-		 s, c);
+		 polygons->m[2][i+1],
+		 s, zbuf, c);
       draw_line( polygons->m[0][i+1],
-		 polygons->m[1][i+1],
+		 polygons->m[1][i+1], 
+		 polygons->m[2][i+1],
 		 polygons->m[0][i+2],
 		 polygons->m[1][i+2],
-		 s, c);
+		 polygons->m[2][i+2],
+		 s, zbuf, c);
       draw_line( polygons->m[0][i+2],
 		 polygons->m[1][i+2],
+		 polygons->m[2][i+2],
 		 polygons->m[0][i],
 		 polygons->m[1][i],
-		 s, c);
+		 polygons->m[2][i],
+		 s, zbuf, c);
     }
   }
 }
@@ -625,7 +643,7 @@ Returns:
 Go through points 2 at a time and call draw_line to add that line
 to the screen
 ====================*/
-void draw_lines( struct matrix * points, screen s, color c) {
+void draw_lines( struct matrix * points, screen s, zbuff zbuf, color c) {
 
   int i;
  
@@ -637,8 +655,9 @@ void draw_lines( struct matrix * points, screen s, color c) {
 
   for ( i = 0; i < points->lastcol - 1; i+=2 ) {
 
-    draw_line( points->m[0][i], points->m[1][i], 
-	       points->m[0][i+1], points->m[1][i+1], s, c);
+    draw_line( points->m[0][i], points->m[1][i], points->m[2][i] ,
+	       points->m[0][i+1], points->m[1][i+1], points->m[2][i+1],
+	       s, zbuf, c);
     //FOR DEMONSTRATION PURPOSES ONLY
     //draw extra pixels so points can actually be seen    
     /*
@@ -663,19 +682,23 @@ void draw_lines( struct matrix * points, screen s, color c) {
 }
 
 
-void draw_line(int x0, int y0, int x1, int y1, screen s, color c) {
+void draw_line(int x0, int y0, double z0, int x1, int y1, double z1, screen s, zbuff zbuf, color c) {
  
   int x, y, d, dx, dy;
+  double z,dz;
 
   x = x0;
   y = y0;
+  z = z0;
   
-  //swap points so we're always draing left to right
+  //swap points so we're always drawing left to right
   if ( x0 > x1 ) {
     x = x1;
     y = y1;
+    z = z1;
     x1 = x0;
     y1 = y0;
+    z1 = z0;
   }
 
   //need to know dx and dy for this version
@@ -688,18 +711,22 @@ void draw_line(int x0, int y0, int x1, int y1, screen s, color c) {
     //slope < 1: Octant 1 (5)
     if ( dx > dy ) {
       d = dy - ( dx / 2 );
-  
+      if (x1==x)
+	exit(42);
+      dz = (z1-z)/abs(x1 - x);
       while ( x <= x1 ) {
-	plot(s, c, x, y);
+	plot(s, zbuf, c, x, y, z);
 
 	if ( d < 0 ) {
 	  x = x + 1;
 	  d = d + dy;
+	  z+=dz;
 	}
 	else {
 	  x = x + 1;
 	  y = y + 1;
 	  d = d + dy - dx;
+	  z+=dz;
 	}
       }
     }
@@ -707,17 +734,20 @@ void draw_line(int x0, int y0, int x1, int y1, screen s, color c) {
     //slope > 1: Octant 2 (6)
     else {
       d = ( dy / 2 ) - dx;
+      dz = (z1-z)/abs(y1-y);
       while ( y <= y1 ) {
 
-	plot(s, c, x, y );
+	plot(s, zbuf, c, x, y, z);
 	if ( d > 0 ) {
 	  y = y + 1;
 	  d = d - dx;
+	  z+=dz;
 	}
 	else {
 	  y = y + 1;
 	  x = x + 1;
 	  d = d + dy - dx;
+	  z+=dz;
 	}
       }
     }
@@ -730,19 +760,21 @@ void draw_line(int x0, int y0, int x1, int y1, screen s, color c) {
     if ( dx > abs(dy) ) {
 
       d = dy + ( dx / 2 );
-  
+      dz = (z1-z)/abs(x1 - x);
       while ( x <= x1 ) {
 
-	plot(s, c, x, y);
+	plot(s, zbuf, c, x, y, z);
 
 	if ( d > 0 ) {
 	  x = x + 1;
 	  d = d + dy;
+	  z+=dz;
 	}
 	else {
 	  x = x + 1;
 	  y = y - 1;
 	  d = d + dy + dx;
+	  z+=dz;
 	}
       }
     }
@@ -751,18 +783,20 @@ void draw_line(int x0, int y0, int x1, int y1, screen s, color c) {
     else {
 
       d =  (dy / 2) + dx;
-
+      dz = (z1-z)/abs(y-y1);
       while ( y >= y1 ) {
 	
-	plot(s, c, x, y );
+	plot(s, zbuf, c, x, y, z);
 	if ( d < 0 ) {
 	  y = y - 1;
 	  d = d + dx;
+	  z+=dz;
 	}
 	else {
 	  y = y - 1;
 	  x = x + 1;
 	  d = d + dy + dx;
+	  z+=dz;
 	}
       }
     }

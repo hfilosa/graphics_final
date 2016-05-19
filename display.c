@@ -75,10 +75,13 @@ pixel 0, 0 located at the lower left corner of the screen
 02/12/10 09:09:00
 jdyrlandweaver
 ====================*/
-void plot( screen s, color c, int x, int y) {
+void plot( screen s, zbuff zbuf,color c, int x, int y, double z) {
   int newy = YRES - 1 - y;
-  if ( x >= 0 && x < XRES && newy >=0 && newy < YRES )
-    s[x][newy] = c;
+  if (z > zbuf[x][newy]){
+    zbuf[x][newy]=z;
+    if ( x >= 0 && x < XRES && newy >=0 && newy < YRES )
+      s[x][newy] = c;
+  }
 }
 
 /*======== void clear_screen() ==========
@@ -117,7 +120,7 @@ void clear_zbuff( zbuff z ) {
 
   for ( y=0; y < YRES; y++ )
     for ( x=0; x < XRES; x++)      
-      z[x][y] = MIN_Z;
+      z[x][y] = -100000;
 }
 
 /*======== void save_ppm() ==========

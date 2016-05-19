@@ -241,7 +241,6 @@ void print_knobs() {
   jdyrlandweaver
   ====================*/
 void my_main( int polygons ) {
-  srand(time(NULL));
   int i, f, j;
   double step;
   double xval, yval, zval, knob_value;

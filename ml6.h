@@ -14,7 +14,7 @@ a pixel as a color triple
 #define XRES 500
 #define YRES 500
 //The smallest value allowed in the z buffer
-#define MIN_Z -100000
+#define MIN_Z -100000;
 #define MAX_COLOR 255
 
 /*
