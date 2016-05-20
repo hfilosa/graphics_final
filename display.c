@@ -77,11 +77,11 @@ jdyrlandweaver
 ====================*/
 void plot( screen s, zbuff zbuf,color c, int x, int y, double z) {
   int newy = YRES - 1 - y;
-  if (z > zbuf[x][newy]){
-    zbuf[x][newy]=z;
-    if ( x >= 0 && x < XRES && newy >=0 && newy < YRES )
+  if ( x >= 0 && x < XRES && newy >=0 && newy < YRES )
+    if (z > zbuf[x][newy]){
+      zbuf[x][newy]=z;
       s[x][newy] = c;
-  }
+    }
 }
 
 /*======== void clear_screen() ==========
@@ -120,7 +120,7 @@ void clear_zbuff( zbuff z ) {
 
   for ( y=0; y < YRES; y++ )
     for ( x=0; x < XRES; x++)      
-      z[x][y] = -100000;
+      z[x][y] = MIN_Z;
 }
 
 /*======== void save_ppm() ==========

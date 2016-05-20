@@ -88,6 +88,10 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, color c ) {
 	}
       }
       magic_num+=b;
+      if (magic_num == 0){
+	printf("MAGIC NUM\n");
+	exit(42);
+      }
       printf("magic_num:%d\n",magic_num);
       magic_num=3-magic_num;
       printf("magic_num:%d\n",magic_num);
@@ -95,17 +99,21 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, color c ) {
       ym=polygons->m[1][i+magic_num];
       zm=polygons->m[2][i+magic_num];
     
+      //Increments for x
       bt_inc=(xt-xb)/(yt-yb);
       mt_inc=(xt-xm)/(yt-ym);
       bm_inc=(xm-xb)/(ym-yb);
 
+      //Increments for z
       bt_z=(zt-zb)/(yt-yb);
       mt_z=(zt-zm)/(yt-ym);
       bm_z=(zm-zb)/(ym-yb);
 
-      c.green=rand()%255;
-      c.red=rand()%255;
-      c.blue=rand()%255;
+      c.green=((i+13)*10)%256;
+      c.red=((i+7)*10)%256;
+      c.blue=((i+37)*10)%256;
+
+      printf("c.green:%d c.red:%d c.blue:%d\n",c.green,c.red,c.blue);
       
       printf("starting to fill in polyon\nYB:%f YM:%f YT:%f\n",yb,ym,yt);
       printf("XB:%f XM:%f XT:%f\n",xb,xm,xt);
@@ -711,8 +719,6 @@ void draw_line(int x0, int y0, double z0, int x1, int y1, double z1, screen s, z
     //slope < 1: Octant 1 (5)
     if ( dx > dy ) {
       d = dy - ( dx / 2 );
-      if (x1==x)
-	exit(42);
       dz = (z1-z)/abs(x1 - x);
       while ( x <= x1 ) {
 	plot(s, zbuf, c, x, y, z);
