@@ -49,7 +49,7 @@ triangles
 04/16/13 13:13:27
 jdyrlandweaver
 ====================*/
-void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, color c ) {
+void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, color c, constants k, ) {
   int i,j,b;
   int magic_num;
   double xb,yb,zb, xt,yt,zt, xm,ym,zm;
@@ -109,9 +109,10 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, color c ) {
       mt_z=(zt-zm)/(yt-ym);
       bm_z=(zm-zb)/(ym-yb);
 
-      c.green=((i+13)*10)%256;
-      c.red=((i+7)*10)%256;
-      c.blue=((i+37)*10)%256;
+      //Calculate ambient lighting
+      c.red=k.red[ambient]*;
+      c.green=k.green[ambient]*;
+      c.blue=k.blue[ambient]*;
 
       printf("c.green:%d c.red:%d c.blue:%d\n",c.green,c.red,c.blue);
       

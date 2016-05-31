@@ -253,9 +253,21 @@ void my_main( int polygons ) {
   color g;
 
   double factor;
-  //struct vary_node **knobs;
-  //struct vary_node *vn;
   char frame_name[128];
+
+  //Declare our default reflectivity values
+  struct constants dcolor;
+  dcolor.r[ambient]=1;
+  dcolor.g[ambient]=0;
+  dcolor.b[ambient]=0;
+
+  dcolor.r[diffuse]=0;
+  dcolor.g[diffuse]=0;
+  dcolor.b[diffuse]=0;
+
+  dcolor.r[specular]=0;
+  dcolor.g[specular]=0;
+  dcolor.b[specular]=0;
 
   num_frames = 1;
   step = 5;
@@ -293,7 +305,7 @@ void my_main( int polygons ) {
 		    step);
 	//apply the current top origin
 	matrix_mult( s->data[ s->top ], tmp );
-	draw_polygons( tmp, t, z, g );
+	draw_polygons( tmp, t, z, g, dcolor );
 	tmp->lastcol = 0;
 	break;
 
@@ -305,7 +317,7 @@ void my_main( int polygons ) {
 		   op[i].op.torus.r1,
 		   step);
 	matrix_mult( s->data[ s->top ], tmp );
-	draw_polygons( tmp, t, z, g );
+	draw_polygons( tmp, t, z, g, dcolor);
 	tmp->lastcol = 0;
 	break;
 
@@ -317,7 +329,7 @@ void my_main( int polygons ) {
 		 op[i].op.box.d1[1],
 		 op[i].op.box.d1[2]);
 	matrix_mult( s->data[ s->top ], tmp );
-	draw_polygons( tmp, t, z, g );
+	draw_polygons( tmp, t, z, g, dcolor);
 	tmp->lastcol = 0;
 	break;
 
