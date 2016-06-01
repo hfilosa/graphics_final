@@ -257,17 +257,38 @@ void my_main( int polygons ) {
 
   //Declare our default reflectivity values
   struct constants dcolor;
-  dcolor.r[ambient]=1;
-  dcolor.g[ambient]=0;
-  dcolor.b[ambient]=0;
+  dcolor.r[Kambient]=0;
+  dcolor.g[Kambient]=0;
+  dcolor.b[Kambient]=0;
 
-  dcolor.r[diffuse]=0;
-  dcolor.g[diffuse]=0;
-  dcolor.b[diffuse]=0;
+  dcolor.r[Kdiffuse]=.5;
+  dcolor.g[Kdiffuse]=1;
+  dcolor.b[Kdiffuse]=1;
 
-  dcolor.r[specular]=0;
-  dcolor.g[specular]=0;
-  dcolor.b[specular]=0;
+  dcolor.r[Kspecular]=0;
+  dcolor.g[Kspecular]=0;
+  dcolor.b[Kspecular]=0;
+
+  //Lights array
+  struct light lights[10];
+  //Define default ambient lighting
+  //We will also store our view vector in here
+  lights[Kambient].c[Lred]=150;
+  lights[Kambient].c[Lgreen]=150;
+  lights[Kambient].c[Lblue]=150;
+  lights[view_vector].l[x_vector]=0;
+  lights[view_vector].l[y_vector]=0;
+  lights[view_vector].l[z_vector]=1;
+
+  //Define a default point light source
+  lights[1].c[Lred]=100;
+  lights[1].c[Lgreen]=0;
+  lights[1].c[Lblue]=0;
+  //Choose these vectors randomly
+  lights[1].l[x_vector]=0;
+  lights[1].l[y_vector]=10;
+  lights[1].l[z_vector]=10;
+  int num_lights=1;
 
   num_frames = 1;
   step = 5;
@@ -305,7 +326,7 @@ void my_main( int polygons ) {
 		    step);
 	//apply the current top origin
 	matrix_mult( s->data[ s->top ], tmp );
-	draw_polygons( tmp, t, z, g, dcolor );
+	draw_polygons( tmp, t, z, dcolor, lights, num_lights);
 	tmp->lastcol = 0;
 	break;
 
@@ -317,7 +338,7 @@ void my_main( int polygons ) {
 		   op[i].op.torus.r1,
 		   step);
 	matrix_mult( s->data[ s->top ], tmp );
-	draw_polygons( tmp, t, z, g, dcolor);
+	draw_polygons( tmp, t, z, dcolor, lights, num_lights);
 	tmp->lastcol = 0;
 	break;
 
@@ -329,7 +350,7 @@ void my_main( int polygons ) {
 		 op[i].op.box.d1[1],
 		 op[i].op.box.d1[2]);
 	matrix_mult( s->data[ s->top ], tmp );
-	draw_polygons( tmp, t, z, g, dcolor);
+	draw_polygons( tmp, t, z, dcolor, lights, num_lights);
 	tmp->lastcol = 0;
 	break;
 

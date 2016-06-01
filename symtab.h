@@ -9,9 +9,18 @@
 #define SYM_FILE   5
 #define SYM_STRING 5
 
-#define ambient 0
-#define diffuse 1
-#define specular 2
+#define Kambient 0
+#define Kdiffuse 1
+#define Kspecular 2
+
+#define Lred 0
+#define Lgreen 1
+#define Lblue 2
+
+#define view_vector 0
+#define x_vector 0
+#define y_vector 1
+#define z_vector 2
 
 struct constants 
 {

@@ -4,7 +4,7 @@
 
 #include "matrix.h"
 #include "gmath.h"
-
+#include "symtab.h"
 
 
 /*======== double * calculate_normal() ==========
@@ -75,4 +75,52 @@ double calculate_dot( struct matrix *points, int i ) {
 
   free(normal);  
   return dot;
+}
+
+/*======== double calculate_surface_normal() ==========
+  Inputs:   struct matrix *points
+            int i  
+  Returns: double *
+     The surface normal of the polygon
+  
+  Calculates the surface normal of triangle points[i], points[i+1], points[i+2] 
+
+  05/31/16 20:38:34
+  Henry
+  ====================*/
+double * calculate_surface_normal( struct matrix *points, int i ) {
+
+  double ax, ay, az, bx, by, bz;
+  double *normal;
+  double vx, vy, vz;
+  double dot;
+
+  //calculate A and B vectors
+  ax = points->m[0][i+1] - points->m[0][i];
+  ay = points->m[1][i+1] - points->m[1][i];
+  az = points->m[2][i+1] - points->m[2][i];
+
+  bx = points->m[0][i+2] - points->m[0][i];
+  by = points->m[1][i+2] - points->m[1][i];
+  bz = points->m[2][i+2] - points->m[2][i];
+
+  //get the surface normal
+  normal = calculate_normal( ax, ay, az, bx, by, bz );
+  return normal;
+}
+
+/*======== double diffuse_multiplier() ==========
+  Inputs:   double *normal
+            double *lights
+  Returns: The value by which the constant of diffuse reflection and 
+   the color of the light are to be multiplied by
+  
+  05/31/16 20:38:34
+  Henry
+  ====================*/
+double diffuse_multiplier(double *normal, struct light light){
+  double light_magnitude=sqrt(pow(light.l[x_vector],2) + pow(light.l[y_vector],2) + pow(light.l[z_vector],2));
+  double dot_product = normal[0]*(light.l[0]/light_magnitude) + normal[1]*(light.l[1]/light_magnitude) + normal[2]*(light.l[2]/light_magnitude);
+  printf("light_magnitude: %f\n",light_magnitude);
+  return dot_product;
 }

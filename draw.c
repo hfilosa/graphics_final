@@ -8,6 +8,7 @@
 #include "draw.h"
 #include "matrix.h"
 #include "gmath.h"
+#include "symtab.h"
 
 /*======== void add_polygon() ==========
 Inputs:   struct matrix *surfaces
@@ -49,7 +50,8 @@ triangles
 04/16/13 13:13:27
 jdyrlandweaver
 ====================*/
-void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, color c, constants k, ) {
+void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct constants k, struct light *lights, int num_lights) {
+  color c;
   int i,j,b;
   int magic_num;
   double xb,yb,zb, xt,yt,zt, xm,ym,zm;
@@ -58,8 +60,13 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, color c, cons
   //The increment along the z axis
   double bt_z,bm_z,mt_z;
   for( i=0; i < polygons->lastcol-2; i+=3 ) {
-    //Figure our which points are the top,bottom and middle
     if ( calculate_dot( polygons, i ) < 0 ) {
+      //zero out our colors
+      c.red=0;
+      c.green=0;
+      c.blue=0;
+
+      //Figure our which points are the top,bottom and middle
       xt=polygons->m[0][i];
       yt=polygons->m[1][i];
       zt=polygons->m[2][i];
@@ -78,7 +85,6 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, color c, cons
       }
       magic_num+=b;
       b=0;
-      printf("magic_num:%d\n",magic_num);
       for (j=1;j<3;j++){
 	if (polygons->m[1][i+j] <= yb){
 	  xb=polygons->m[0][i+j];
@@ -88,13 +94,7 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, color c, cons
 	}
       }
       magic_num+=b;
-      if (magic_num == 0){
-	printf("MAGIC NUM\n");
-	exit(42);
-      }
-      printf("magic_num:%d\n",magic_num);
       magic_num=3-magic_num;
-      printf("magic_num:%d\n",magic_num);
       xm=polygons->m[0][i+magic_num];
       ym=polygons->m[1][i+magic_num];
       zm=polygons->m[2][i+magic_num];
@@ -110,15 +110,35 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, color c, cons
       bm_z=(zm-zb)/(ym-yb);
 
       //Calculate ambient lighting
-      c.red=k.red[ambient]*;
-      c.green=k.green[ambient]*;
-      c.blue=k.blue[ambient]*;
+      c.red=k.r[Kambient]*lights[Kambient].c[Lred];
+      c.green=k.g[Kambient]*lights[Kambient].c[Lgreen];
+      c.blue=k.b[Kambient]*lights[Kambient].c[Lblue];
 
-      printf("c.green:%d c.red:%d c.blue:%d\n",c.green,c.red,c.blue);
-      
+      //Calculate diffuse and specular lighting for each point light source
+      int l;
+      double * surface_normal=calculate_surface_normal(polygons,i);
+      printf("Nx: %f Ny: %f Nz: %f\n",surface_normal[0],surface_normal[1],surface_normal[2]);
+      double theta;
+      for (l=num_lights;l>0;l--){
+	theta=diffuse_multiplier(surface_normal,lights[l]);
+	printf("theta:%f\n",theta);
+	c.red+=k.r[Kdiffuse]*lights[l].c[Lred]*theta;
+	c.green+=k.g[Kdiffuse]*lights[l].c[Lgreen]*theta;
+	c.blue+=k.b[Kdiffuse]*lights[l].c[Lblue]*theta;
+      }
+
+      free(surface_normal);
+      //Cap color at 255 if it is above that
+      c.red>255 ? c.red=255 : c.red;
+      c.green>255 ? c.green=255 : c.green;
+      c.blue>255 ? c.blue=255 : c.blue;
+
+      /* For annoying testing
       printf("starting to fill in polyon\nYB:%f YM:%f YT:%f\n",yb,ym,yt);
+      printf("c.green:%d c.red:%d c.blue:%d\n",c.green,c.red,c.blue);
       printf("XB:%f XM:%f XT:%f\n",xb,xm,xt);
       printf("bt_inc:%f bm_inc:%f mt_inc:%f\n\n",bt_inc,bm_inc,mt_inc);
+      */
       double left_x=xb;
       double right_x=xb;
       double left_z=zb;
