@@ -116,15 +116,24 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
 
       //Calculate diffuse and specular lighting for each point light source
       int l;
+      //The normalized surface normal
       double * surface_normal=calculate_surface_normal(polygons,i);
+      //The normalized light
+      double * normal_light;
       printf("Nx: %f Ny: %f Nz: %f\n",surface_normal[0],surface_normal[1],surface_normal[2]);
       double theta;
+      double tmp;
       for (l=num_lights;l>0;l--){
 	theta=diffuse_multiplier(surface_normal,lights[l]);
 	printf("theta:%f\n",theta);
-	c.red+=k.r[Kdiffuse]*lights[l].c[Lred]*theta;
-	c.green+=k.g[Kdiffuse]*lights[l].c[Lgreen]*theta;
-	c.blue+=k.b[Kdiffuse]*lights[l].c[Lblue]*theta;
+	tmp=k.r[Kdiffuse]*lights[l].c[Lred]*theta;
+	tmp>0 ? c.red+=tmp : 0;
+	tmp=k.g[Kdiffuse]*lights[l].c[Lgreen]*theta;
+	if (tmp>0)
+	  c.green+=tmp;
+	tmp=k.b[Kdiffuse]*lights[l].c[Lblue]*theta;
+	if (tmp>0)
+	  c.blue+=tmp;
       }
 
       free(surface_normal);

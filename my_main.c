@@ -257,13 +257,13 @@ void my_main( int polygons ) {
 
   //Declare our default reflectivity values
   struct constants dcolor;
-  dcolor.r[Kambient]=0;
-  dcolor.g[Kambient]=0;
-  dcolor.b[Kambient]=0;
+  dcolor.r[Kambient]=.2;
+  dcolor.g[Kambient]=.2;
+  dcolor.b[Kambient]=.2;
 
-  dcolor.r[Kdiffuse]=.5;
-  dcolor.g[Kdiffuse]=1;
-  dcolor.b[Kdiffuse]=1;
+  dcolor.r[Kdiffuse]=.8;
+  dcolor.g[Kdiffuse]=.8;
+  dcolor.b[Kdiffuse]=.8;
 
   dcolor.r[Kspecular]=0;
   dcolor.g[Kspecular]=0;
@@ -273,21 +273,21 @@ void my_main( int polygons ) {
   struct light lights[10];
   //Define default ambient lighting
   //We will also store our view vector in here
-  lights[Kambient].c[Lred]=150;
-  lights[Kambient].c[Lgreen]=150;
-  lights[Kambient].c[Lblue]=150;
+  lights[Kambient].c[Lred]=200;
+  lights[Kambient].c[Lgreen]=200;
+  lights[Kambient].c[Lblue]=200;
   lights[view_vector].l[x_vector]=0;
   lights[view_vector].l[y_vector]=0;
   lights[view_vector].l[z_vector]=1;
 
   //Define a default point light source
-  lights[1].c[Lred]=100;
+  lights[1].c[Lred]=200;
   lights[1].c[Lgreen]=0;
   lights[1].c[Lblue]=0;
   //Choose these vectors randomly
   lights[1].l[x_vector]=0;
-  lights[1].l[y_vector]=10;
-  lights[1].l[z_vector]=10;
+  lights[1].l[y_vector]=-1;
+  lights[1].l[z_vector]=1;
   int num_lights=1;
 
   num_frames = 1;

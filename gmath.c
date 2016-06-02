@@ -81,9 +81,9 @@ double calculate_dot( struct matrix *points, int i ) {
   Inputs:   struct matrix *points
             int i  
   Returns: double *
-     The surface normal of the polygon
+     The normalized surface normal of the polygon
   
-  Calculates the surface normal of triangle points[i], points[i+1], points[i+2] 
+  Calculates the normalized surface normal of triangle points[i], points[i+1], points[i+2] 
 
   05/31/16 20:38:34
   Henry
@@ -106,6 +106,10 @@ double * calculate_surface_normal( struct matrix *points, int i ) {
 
   //get the surface normal
   normal = calculate_normal( ax, ay, az, bx, by, bz );
+  double normal_magnitude=sqrt(pow(normal[0],2) + pow(normal[1],2) + pow(normal[2],2));
+  normal[0]=normal[0]/normal_magnitude;
+  normal[1]=normal[1]/normal_magnitude;
+  normal[2]=normal[2]/normal_magnitude;
   return normal;
 }
 
