@@ -117,13 +117,38 @@ double * calculate_surface_normal( struct matrix *points, int i ) {
   Inputs:   double *normal
             double *lights
   Returns: The value by which the constant of diffuse reflection and 
-   the color of the light are to be multiplied by
+   the color of the light are to be multiplied by to get diffuse reflection.
+   IMPORTANT: The vectors must be normalized!
   
   05/31/16 20:38:34
   Henry
   ====================*/
 double diffuse_multiplier(double *normal, struct light light){
   double light_magnitude=sqrt(pow(light.l[x_vector],2) + pow(light.l[y_vector],2) + pow(light.l[z_vector],2));
+  double dot_product = normal[0]*(light.l[0]/light_magnitude) + normal[1]*(light.l[1]/light_magnitude) + normal[2]*(light.l[2]/light_magnitude);
+  printf("light_magnitude: %f\n",light_magnitude);
+  return dot_product;
+}
+
+double * normalize_light(struct light light){
+  double *new_light;
+  new_light = (double *)malloc(3 * sizeof(double));
+  n
+}
+
+/*======== double specular_multiplier() ==========
+  Inputs:   double *normal
+            double *lights
+	    double *view
+  Returns: The value by which the constant of diffuse reflection and 
+   the color of the light are to be multiplied by to get specular reflection.
+   IMPORTANT: The vectors must be normalized!
+  
+  06/2/16 13:37:34
+  Henry
+  ====================*/
+double ambient_multiplier(double *normal, struct light light, struct light view){
+  
   double dot_product = normal[0]*(light.l[0]/light_magnitude) + normal[1]*(light.l[1]/light_magnitude) + normal[2]*(light.l[2]/light_magnitude);
   printf("light_magnitude: %f\n",light_magnitude);
   return dot_product;

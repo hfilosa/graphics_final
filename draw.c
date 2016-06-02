@@ -120,20 +120,19 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       double * surface_normal=calculate_surface_normal(polygons,i);
       //The normalized light
       double * normal_light;
-      printf("Nx: %f Ny: %f Nz: %f\n",surface_normal[0],surface_normal[1],surface_normal[2]);
       double theta;
       double tmp;
       for (l=num_lights;l>0;l--){
 	theta=diffuse_multiplier(surface_normal,lights[l]);
-	printf("theta:%f\n",theta);
+	//Calculate diffuse reflection. Use ternary operator to save lines
 	tmp=k.r[Kdiffuse]*lights[l].c[Lred]*theta;
 	tmp>0 ? c.red+=tmp : 0;
 	tmp=k.g[Kdiffuse]*lights[l].c[Lgreen]*theta;
-	if (tmp>0)
-	  c.green+=tmp;
+	tmp>0 ? c.green+=tmp : 0;
 	tmp=k.b[Kdiffuse]*lights[l].c[Lblue]*theta;
-	if (tmp>0)
-	  c.blue+=tmp;
+	tmp>0 ? c.blue+=tmp : 0;
+	//Calculate specular reflection.
+	
       }
 
       free(surface_normal);
