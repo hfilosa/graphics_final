@@ -183,41 +183,69 @@ double specular_multiplier(double *normal, double *light, double *view){
   Returns: double *
      The vertex  normal of that vertex
   
-  Calculates the vertex normal of n triangles which share a vertex.
-  vertices is an aray of the indices of the first point of each triangle touching the vertex
 
   05/31/16 20:38:34
   Henry
   ====================*/
-double * calculate_vertex_normal( struct matrix *points, int * indices) {
+double * calculate_vertex_normals( struct matrix *points) {
 
   double ax, ay, az, bx, by, bz;
-  double *normal;
-  double *vertex=(double *)malloc(3 * sizeof(double));
   double vx, vy, vz;
   double dot;
+  double *tmp;
+  
+  struct matrix *unsorted=new_matrix(6,points->lastcol);
 
-  int i;
-  for (i=0;i<sizeof(indices)/4;i++){
-    //calculate A and B vectors
-    i=indices[i];
-    ax = points->m[0][i+1] - points->m[0][i];
-    ay = points->m[1][i+1] - points->m[1][i];
-    az = points->m[2][i+1] - points->m[2][i];
-
-    bx = points->m[0][i+2] - points->m[0][i];
-    by = points->m[1][i+2] - points->m[1][i];
-    bz = points->m[2][i+2] - points->m[2][i];
-    
-    //get the surface normal
-    normal = calculate_normal( ax, ay, az, bx, by, bz );
-    
-    //add to the vertex normal
-    vertex[0]+=normal[0];
-    vertex[1]+=normal[1];
-    vertex[2]+=normal[2];
-    free(normal);
+  int i,j;
+  for (i=0;i<points->lastcol;i+=3){
+    tmp=calculate_surface_normal(points,i);
+    for (j=i;j<i+3;i++){
+      unsorted->m[0][j]=(int)points->m[0][i];
+      unsorted->m[1][j]=(int)points->m[1][i];
+      unsorted->m[2][j]=(int)points->m[2][i];
+      unsorted->m[3][j]=tmp[0];
+      unsorted->m[4][j]=tmp[1];
+      unsorted->m[5][j]=tmp[2];
+    }
+    free(tmp);
   }
+  //sort the vertices struct
+  struct matrix * sorted=new_matrix(6,0);
+  int sorted;
+  double tmp[3];
+  int index;
+  double magnitude;
+  for (i=0;i<unsorted->lastcol;i++){
+    //Check if already in sorted
+    sorted=0;
+    for (j=0;j<sorted->lastcol;j++){
+      if (sorted->m[0][j] == unsorted->m[0][i] && sorted->m[1][j] == unsorted->m[1][i] && sorted->m[2][j] == unsorted->m[2][i]){
+	sorted=1;
+	i=sorted->lastcol+1;
+      }
+    }
+    if (!sorted){
+      index=sorted->lastcol;
+      grow_matric(sorted->m,1);
+      //Add in the coordinates
+      sorted->m[0][index]=unsorted->m[0][i];
+      sorted->m[1][index]=unsorted->m[1][i];
+      sorted->m[2][index]=unsorted->m[2][i];
+      //calculate the vertex normal
+      for (j=0;j<unsorted->lastcol;j++){
+	if (sorted->m[0][index] == unsorted->m[0][j] && sorted->m[1][index] == unsorted->m[1][j] && sorted->m[2][index] == unsorted->m[2][j]){
+	  tmp[0]+=unsorted->m[3][j];
+	  tmp[0]+=unsorted->m[4][j];
+	  tmp[0]+=unsorted->m[5][j];
+	}
+      }
+      magnitude=sqrt(pow(tmp[0],2)+pow(tmp[1],2)+pow(tmp[2],2));
+      tmp[0]=tmp[0]/magnitude;
+      tmp[1]=tmp[1]/magnitude;
+      tmp[2]=tmp[2]/magnitude;
+	   
+  sorted->vertex=(double *)malloc(3*points->lastcol);
+  
   //normalize the vertex normal
   double magnitude=sqrt(pow(vertex[0],2)+ pow(vertex[1],2)+ pow(vertex[2],2));
   vertex[0]=vertex[0]/magnitude;

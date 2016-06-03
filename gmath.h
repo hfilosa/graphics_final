@@ -12,4 +12,12 @@ double diffuse_multiplier(double *normal, double *light);
 double specular_multiplier(double *normal, double *light, double *view);
 double * normalize_light(struct light light);
 double * calculate_vertex_normal( struct matrix *points, int * indices);
+
+struct vertices
+{
+  int *cords;
+  double *vertex;
+}
+
+
 #endif
