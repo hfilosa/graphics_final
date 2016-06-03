@@ -77,7 +77,7 @@ Returns:
 print the matrix
 */
 void print_matrix(struct matrix *m) {
-
+  printf("Num_col:%d Num_row:%d\n",m->cols,m->rows);
   int i, j;
   for (i=0; i < m->rows; i++) {
     for (j=0; j < m->cols; j++) 

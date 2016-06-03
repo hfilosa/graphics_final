@@ -115,7 +115,7 @@ double * calculate_surface_normal( struct matrix *points, int i ) {
 
 /*======== double diffuse_multiplier() ==========
   Inputs:   double *normal
-            double *lights
+            double *light
   Returns: The value by which the constant of diffuse reflection and 
    the color of the light are to be multiplied by to get diffuse reflection.
    IMPORTANT: The vectors must be normalized!
@@ -123,22 +123,32 @@ double * calculate_surface_normal( struct matrix *points, int i ) {
   05/31/16 20:38:34
   Henry
   ====================*/
-double diffuse_multiplier(double *normal, struct light light){
-  double light_magnitude=sqrt(pow(light.l[x_vector],2) + pow(light.l[y_vector],2) + pow(light.l[z_vector],2));
-  double dot_product = normal[0]*(light.l[0]/light_magnitude) + normal[1]*(light.l[1]/light_magnitude) + normal[2]*(light.l[2]/light_magnitude);
-  printf("light_magnitude: %f\n",light_magnitude);
+double diffuse_multiplier(double *normal, double *light){
+  double dot_product = normal[0]*light[0] + normal[1]*light[1] + normal[2]*light[2];
   return dot_product;
 }
 
+/*======== double normalize_light() ==========
+  Inputs:  struct light
+  Returns: The normalized light vector.
+    Can also be used to normalize view vector.
+  
+  06/2/16 18:44:34
+  Henry
+  ====================*/
 double * normalize_light(struct light light){
   double *new_light;
   new_light = (double *)malloc(3 * sizeof(double));
-  n
+  double light_magnitude=sqrt(pow(light.l[x_vector],2) + pow(light.l[y_vector],2) + pow(light.l[z_vector],2));
+  new_light[0]=light.l[0]/light_magnitude;
+  new_light[1]=light.l[1]/light_magnitude;
+  new_light[2]=light.l[2]/light_magnitude;
+  return new_light;
 }
 
 /*======== double specular_multiplier() ==========
   Inputs:   double *normal
-            double *lights
+            double *light
 	    double *view
   Returns: The value by which the constant of diffuse reflection and 
    the color of the light are to be multiplied by to get specular reflection.
@@ -147,9 +157,72 @@ double * normalize_light(struct light light){
   06/2/16 13:37:34
   Henry
   ====================*/
-double ambient_multiplier(double *normal, struct light light, struct light view){
-  
-  double dot_product = normal[0]*(light.l[0]/light_magnitude) + normal[1]*(light.l[1]/light_magnitude) + normal[2]*(light.l[2]/light_magnitude);
-  printf("light_magnitude: %f\n",light_magnitude);
+double specular_multiplier(double *normal, double *light, double *view){
+  double dot_product = normal[0]*light[0] + normal[1]*light[1] + normal[2]*light[2];  
+  double tmp[3];
+  tmp[0]=(2*dot_product*normal[0]) - light[0];
+  tmp[1]=(2*dot_product*normal[1]) - light[1];
+  tmp[2]=(2*dot_product*normal[2]) - light[2];
+  //We now have to normalize this tmp vector
+  //The tmp vector is really the vector of reflection
+  //When in doubt normalize!
+  double mag=sqrt(pow(tmp[0],2) + pow(tmp[1],2) + pow(tmp[2],2));
+  tmp[0]=tmp[0]/mag;
+  tmp[1]=tmp[1]/mag;
+  tmp[2]=tmp[2]/mag;
+  dot_product = tmp[0]*view[0] + tmp[1]*view[1] + tmp[2]*view[2];
+  //Sharpening factor. High values will make reflections sharper. Arbitrary value
+  int sharp=4;
+  dot_product=pow(dot_product,3);
   return dot_product;
+}
+
+/*======== double calculate_vertex_normal() ==========
+  Inputs:   struct matrix *points
+            int * vertex  
+  Returns: double *
+     The vertex  normal of that vertex
+  
+  Calculates the vertex normal of n triangles which share a vertex.
+  vertices is an aray of the indices of the first point of each triangle touching the vertex
+
+  05/31/16 20:38:34
+  Henry
+  ====================*/
+double * calculate_vertex_normal( struct matrix *points, int * indices) {
+
+  double ax, ay, az, bx, by, bz;
+  double *normal;
+  double *vertex=(double *)malloc(3 * sizeof(double));
+  double vx, vy, vz;
+  double dot;
+
+  int i;
+  for (i=0;i<sizeof(indices)/4;i++){
+    //calculate A and B vectors
+    i=indices[i];
+    ax = points->m[0][i+1] - points->m[0][i];
+    ay = points->m[1][i+1] - points->m[1][i];
+    az = points->m[2][i+1] - points->m[2][i];
+
+    bx = points->m[0][i+2] - points->m[0][i];
+    by = points->m[1][i+2] - points->m[1][i];
+    bz = points->m[2][i+2] - points->m[2][i];
+    
+    //get the surface normal
+    normal = calculate_normal( ax, ay, az, bx, by, bz );
+    
+    //add to the vertex normal
+    vertex[0]+=normal[0];
+    vertex[1]+=normal[1];
+    vertex[2]+=normal[2];
+    free(normal);
+  }
+  //normalize the vertex normal
+  double magnitude=sqrt(pow(vertex[0],2)+ pow(vertex[1],2)+ pow(vertex[2],2));
+  vertex[0]=vertex[0]/magnitude;
+  vertex[1]=vertex[1]/magnitude;
+  vertex[2]=vertex[2]/magnitude;
+
+  return vertex;
 }

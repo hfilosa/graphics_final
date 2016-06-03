@@ -41,17 +41,21 @@ void add_polygon( struct matrix *polygons,
 /*======== void draw_polygons() ==========
 Inputs:   struct matrix *polygons
           screen s
-          color c  
+          zbuff zbuf
+	  struct constants k
+	  struct lights *lights
+	  int num_lights
 Returns: 
 Goes through polygons 3 points at a time, drawing 
 lines connecting each points to create bounding
-triangles
+triangles. Then fills in triangles using polygon shading model.
 
 04/16/13 13:13:27
 jdyrlandweaver
+& Henry
 ====================*/
-void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct constants k, struct light *lights, int num_lights) {
-  color c;
+void draw_polygons( struct matrix *polygons, struct matrix *vertices, screen s, zbuff zbuf, struct constants k, struct light *lights, int num_lights) {
+  color c, ambient_color, bottom_color, middle_color, top_color;
   int i,j,b;
   int magic_num;
   double xb,yb,zb, xt,yt,zt, xm,ym,zm;
@@ -59,6 +63,10 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
   double bt_inc,bm_inc,mt_inc;
   //The increment along the z axis
   double bt_z,bm_z,mt_z;
+  //The normalized view vector. Only need to calculate once
+  double * normal_view=normalize_light(lights[view_vector]);
+  //The index of the top,bottom, and middle vertex normals
+  int vb,vm,vt;
   for( i=0; i < polygons->lastcol-2; i+=3 ) {
     if ( calculate_dot( polygons, i ) < 0 ) {
       //zero out our colors
@@ -66,13 +74,16 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       c.green=0;
       c.blue=0;
 
-      //Figure our which points are the top,bottom and middle
+      //Figure out which points are the top,bottom and middle
+      //Also figure out  top,bottom and middle vertex normals
       xt=polygons->m[0][i];
       yt=polygons->m[1][i];
       zt=polygons->m[2][i];
+      vt=i;
       xb=polygons->m[0][i];
       yb=polygons->m[1][i];
       zb=polygons->m[2][i];
+      vb=i;
       b=0;
       magic_num=0;
       for (j=1;j<3;j++){
@@ -80,6 +91,7 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
 	  xt=polygons->m[0][i+j];
 	  yt=polygons->m[1][i+j];
 	  zt=polygons->m[2][i+j];
+	  vt=i+j;
 	  b=j;
 	}
       }
@@ -90,6 +102,7 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
 	  xb=polygons->m[0][i+j];
 	  yb=polygons->m[1][i+j];
 	  zb=polygons->m[2][i+j];
+	  vb=i+j;
 	  b=j;
 	}
       }
@@ -98,6 +111,7 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       xm=polygons->m[0][i+magic_num];
       ym=polygons->m[1][i+magic_num];
       zm=polygons->m[2][i+magic_num];
+      vm=i+magic_num;
     
       //Increments for x
       bt_inc=(xt-xb)/(yt-yb);
@@ -110,10 +124,14 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       bm_z=(zm-zb)/(ym-yb);
 
       //Calculate ambient lighting
-      c.red=k.r[Kambient]*lights[Kambient].c[Lred];
-      c.green=k.g[Kambient]*lights[Kambient].c[Lgreen];
-      c.blue=k.b[Kambient]*lights[Kambient].c[Lblue];
-
+      ambient_color.red=k.r[Kambient]*lights[Kambient].c[Lred];
+      ambient_color.green=k.g[Kambient]*lights[Kambient].c[Lgreen];
+      ambient_color.blue=k.b[Kambient]*lights[Kambient].c[Lblue];
+      
+      ambient_color.red>255 ? ambient_color.red=255 : ambient_color.red;
+      ambient_color.green>255 ? ambient_color.green=255 : ambient_color.green;
+      ambient_color.blue>255 ? ambient_color.blue=255 : ambient_color.blue;
+      /*
       //Calculate diffuse and specular lighting for each point light source
       int l;
       //The normalized surface normal
@@ -123,7 +141,8 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       double theta;
       double tmp;
       for (l=num_lights;l>0;l--){
-	theta=diffuse_multiplier(surface_normal,lights[l]);
+	normal_light=normalize_light(lights[l]);
+	theta=diffuse_multiplier(surface_normal,normal_light);
 	//Calculate diffuse reflection. Use ternary operator to save lines
 	tmp=k.r[Kdiffuse]*lights[l].c[Lred]*theta;
 	tmp>0 ? c.red+=tmp : 0;
@@ -132,14 +151,127 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
 	tmp=k.b[Kdiffuse]*lights[l].c[Lblue]*theta;
 	tmp>0 ? c.blue+=tmp : 0;
 	//Calculate specular reflection.
-	
+	theta=specular_multiplier(surface_normal,normal_light,normal_view);
+	tmp=k.r[Kspecular]*lights[l].c[Lred]*theta;
+	tmp>0 ? c.red+=tmp : 0;
+	tmp=k.g[Kspecular]*lights[l].c[Lgreen]*theta;
+	tmp>0 ? c.green+=tmp : 0;
+	tmp=k.b[Kspecular]*lights[l].c[Lblue]*theta;
+	tmp>0 ? c.blue+=tmp : 0;
+	free(normal_light);
       }
-
       free(surface_normal);
+      */
+
+      printf("bottom vertex\n");
+      //Calculate diffuse and specular lighting for bottom vertex for each light source
+      int l;
+      //The bottom vertex
+      double vertex_normal[3];
+      vertex_normal[0]=vertices->m[vb][0];
+      vertex_normal[1]=vertices->m[vb][1];
+      vertex_normal[2]=vertices->m[vb][2];
+      //The normalized light
+      double * normal_light;
+      double theta;
+      double tmp;
+      for (l=num_lights;l>0;l--){
+	normal_light=normalize_light(lights[l]);
+	theta=diffuse_multiplier(vertex_normal,normal_light);
+	//Calculate diffuse reflection. Use ternary operator to save lines
+	tmp=k.r[Kdiffuse]*lights[l].c[Lred]*theta;
+	tmp>0 ? bottom_color.red+=tmp : 0;
+	tmp=k.g[Kdiffuse]*lights[l].c[Lgreen]*theta;
+	tmp>0 ? bottom_color.green+=tmp : 0;
+	tmp=k.b[Kdiffuse]*lights[l].c[Lblue]*theta;
+	tmp>0 ? bottom_color.blue+=tmp : 0;
+	//Calculate specular reflection.
+	theta=specular_multiplier(vertex_normal,normal_light,normal_view);
+	tmp=k.r[Kspecular]*lights[l].c[Lred]*theta;
+	tmp>0 ? bottom_color.red+=tmp : 0;
+	tmp=k.g[Kspecular]*lights[l].c[Lgreen]*theta;
+	tmp>0 ? bottom_color.green+=tmp : 0;
+	tmp=k.b[Kspecular]*lights[l].c[Lblue]*theta;
+	tmp>0 ? bottom_color.blue+=tmp : 0;
+	free(normal_light);
+      }
+      //Add in ambient lighting
+      bottom_color.red+=ambient_color.red;
+      bottom_color.green+=ambient_color.green;
+      bottom_color.blue+=ambient_color.blue;
       //Cap color at 255 if it is above that
-      c.red>255 ? c.red=255 : c.red;
-      c.green>255 ? c.green=255 : c.green;
-      c.blue>255 ? c.blue=255 : c.blue;
+      bottom_color.red>255 ? bottom_color.red=255 : 0;
+      bottom_color.green>255 ? bottom_color.green=255 : 0;
+      bottom_color.blue>255 ? bottom_color.blue=255 : 0;
+
+      printf("middle vertex index: %d\n",vm);
+      //Calculate diffuse and specular lighting for middle vertex for each light source
+      //The middle vertex
+      vertex_normal[0]=vertices->m[vm][0];
+      vertex_normal[1]=vertices->m[vm][1];
+      vertex_normal[2]=vertices->m[vm][2];
+      printf("Error after here 1\n");
+      for (l=num_lights;l>0;l--){
+	normal_light=normalize_light(lights[l]);
+	theta=diffuse_multiplier(vertex_normal,normal_light);
+	//Calculate diffuse reflection. Use ternary operator to save lines
+	tmp=k.r[Kdiffuse]*lights[l].c[Lred]*theta;
+	tmp>0 ? middle_color.red+=tmp : 0;
+	tmp=k.g[Kdiffuse]*lights[l].c[Lgreen]*theta;
+	tmp>0 ? middle_color.green+=tmp : 0;
+	tmp=k.b[Kdiffuse]*lights[l].c[Lblue]*theta;
+	tmp>0 ? middle_color.blue+=tmp : 0;
+	//Calculate specular reflection.
+	theta=specular_multiplier(vertex_normal,normal_light,normal_view);
+	tmp=k.r[Kspecular]*lights[l].c[Lred]*theta;
+	tmp>0 ? middle_color.red+=tmp : 0;
+	tmp=k.g[Kspecular]*lights[l].c[Lgreen]*theta;
+	tmp>0 ? middle_color.green+=tmp : 0;
+	tmp=k.b[Kspecular]*lights[l].c[Lblue]*theta;
+	tmp>0 ? middle_color.blue+=tmp : 0;
+	free(normal_light);
+      }
+      middle_color.red+=ambient_color.red;
+      middle_color.green+=ambient_color.green;
+      middle_color.blue+=ambient_color.blue;
+      //Cap color at 255 if it is above that
+      middle_color.red>255 ? middle_color.red=255 : 0;
+      middle_color.green>255 ? middle_color.green=255 : 0;
+      middle_color.blue>255 ? middle_color.blue=255 : 0;
+
+      printf("top vertex\n");
+      //Calculate diffuse and specular lighting for top vertex for each light source
+      //The top vertex
+      vertex_normal[0]=vertices->m[vt][0];
+      vertex_normal[1]=vertices->m[vt][1];
+      vertex_normal[2]=vertices->m[vt][2];
+      for (l=num_lights;l>0;l--){
+	normal_light=normalize_light(lights[l]);
+	theta=diffuse_multiplier(vertex_normal,normal_light);
+	//Calculate diffuse reflection. Use ternary operator to save lines
+	tmp=k.r[Kdiffuse]*lights[l].c[Lred]*theta;
+	tmp>0 ? top_color.red+=tmp : 0;
+	tmp=k.g[Kdiffuse]*lights[l].c[Lgreen]*theta;
+	tmp>0 ? top_color.green+=tmp : 0;
+	tmp=k.b[Kdiffuse]*lights[l].c[Lblue]*theta;
+	tmp>0 ? top_color.blue+=tmp : 0;
+	//Calculate specular reflection.
+	theta=specular_multiplier(vertex_normal,normal_light,normal_view);
+	tmp=k.r[Kspecular]*lights[l].c[Lred]*theta;
+	tmp>0 ? top_color.red+=tmp : 0;
+	tmp=k.g[Kspecular]*lights[l].c[Lgreen]*theta;
+	tmp>0 ? top_color.green+=tmp : 0;
+	tmp=k.b[Kspecular]*lights[l].c[Lblue]*theta;
+	tmp>0 ? top_color.blue+=tmp : 0;
+	free(normal_light);
+      }
+      top_color.red+=ambient_color.red;
+      top_color.green+=ambient_color.green;
+      top_color.blue+=ambient_color.blue;
+      //Cap color at 255 if it is above that
+      top_color.red>255 ? top_color.red=255 : 0;
+      top_color.green>255 ? top_color.green=255 : 0;
+      top_color.blue>255 ? top_color.blue=255 : 0;
 
       /* For annoying testing
       printf("starting to fill in polyon\nYB:%f YM:%f YT:%f\n",yb,ym,yt);
@@ -152,11 +284,29 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       double left_z=zb;
       double right_z=zb;
       int passed_middle=0;
+      //Color interpolation
+      double bm_red,bm_green,bm_blue,mt_red,mt_green,mt_blue;
+      if (ym != yb){
+	double bm_red=(middle_color.red-bottom_color.red)/(ym-yb);
+	double bm_green=(middle_color.green-bottom_color.green)/(ym-yb);
+	double bm_blue=(middle_color.blue-bottom_color.blue)/(ym-yb);
+      }
+      if (ym != yt){
+	double mt_red=(middle_color.red-bottom_color.red)/(yt-ym);
+	double mt_green=(middle_color.green-bottom_color.green)/(yt-ym);
+	double mt_blue=(middle_color.blue-bottom_color.blue)/(yt-ym);
+      }
+      c.red=bottom_color.red;
+      c.green=bottom_color.green;
+      c.blue=bottom_color.blue;
       while (yb<yt){
 	if (!passed_middle && yb>=ym){
 	  right_x=xm;
 	  right_z=zm;
 	  passed_middle=1;
+	  c.red=middle_color.red;
+	  c.green=middle_color.green;
+	  c.blue=middle_color.blue;
 	}
 	draw_line(left_x,yb,left_z, right_x,yb,right_z, s,zbuf,c);
 	if (yb>=ym){
@@ -164,12 +314,18 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
 	  left_z+=bt_z;
 	  right_x+=mt_inc;
 	  right_z+=mt_z;
+	  c.red+=mt_red;
+	  c.green+=mt_green;
+	  c.blue+=mt_blue;
 	}
 	else{
 	  left_x+=bt_inc;
 	  left_z+=bt_z;
 	  right_x+=bm_inc;
 	  right_z+=bm_z;
+	  c.red+=bm_red;
+	  c.green+=bm_green;
+	  c.blue+=bm_blue;
 	}
 	yb+=1;
       }
@@ -196,6 +352,7 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
 		 s, zbuf, c);
     }
   }
+  free(normal_view);
 }
 
 
@@ -473,7 +630,7 @@ void generate_torus( struct matrix * points,
 
   jdyrlandweaver
   ====================*/
-void add_box( struct matrix * polygons,
+void add_box( struct matrix * polygons, struct matrix * vertices,
 	      double x, double y, double z,
 	      double width, double height, double depth ) {
 
@@ -481,6 +638,9 @@ void add_box( struct matrix * polygons,
   x2 = x + width;
   y2 = y - height;
   z2 = z - depth;
+
+  //For creating matrix of vertix normals
+  int first_col=polygons->lastcol;
   //front
   add_polygon( polygons, 
 	       x, y, z, 
@@ -535,6 +695,24 @@ void add_box( struct matrix * polygons,
 	       x, y2, z, 
 	       x, y, z,
 	       x, y, z2); 
+  int i;
+  int j;
+  int indices[2];
+  double *vertex_normal;
+  printf("Before adding vertices\n");
+  for (i=first_col;i<polygons->lastcol;i+=6){
+    printf("i : %d\n\n",i);
+    indices[0]=i;
+    indices[1]=i+3;
+    vertex_normal=calculate_vertex_normal(polygons,indices);
+    for (int j=i;j<i+6;j++){
+      printf("j : %d\n",j);
+      add_point(vertices,vertex_normal[0],vertex_normal[1],vertex_normal[2]);
+    }
+    free(vertex_normal);
+  }
+  print_matrix(vertices);
+  printf("Vertices added\n");
 }
   
 /*======== void add_circle() ==========

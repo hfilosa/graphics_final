@@ -19,7 +19,7 @@ void add_polygons( struct matrix * points,
 		   double x1, double y1, double z1,
 		   double x2, double y2, double z2);
 void draw_lines( struct matrix * points, screen s, zbuff zbuf, color c);
-void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct constants k, struct light *lights, int num_lights);
+void draw_polygons( struct matrix *polygons, struct matrix *vertices, screen s, zbuff zbuf, struct constants k, struct light *lights, int num_lights);
 
 //advanced shapes
 void add_circle( struct matrix * points, 
@@ -31,7 +31,7 @@ void add_curve( struct matrix *points,
 		double x2, double y2,
 		double x3, double y3,
 		double step, int type );
-void add_box( struct matrix *points,
+void add_box( struct matrix *points, struct matrix * vertices,
 	      double x, double y, double z,
 	      double w, double h, double d);
 void add_sphere( struct matrix * points, 
