@@ -290,10 +290,6 @@ void my_main( int polygons ) {
   lights[1].l[z_vector]=1;
   int num_lights=1;
 
-  //Used for Goraud shading.
-  //Matrix of the vertex normals for each point
-  struct matrix *vertices;
-
   num_frames = 1;
   step = 5;
   int is_anim=0;
@@ -311,7 +307,6 @@ void my_main( int polygons ) {
   while(j<num_frames){
     clear_zbuff(z);
     tmp=new_matrix(4,4);
-    vertices=new_matrix(4,4);
     struct stack *s=new_stack();
     if (is_anim){
       current=knobs[j];
@@ -331,9 +326,8 @@ void my_main( int polygons ) {
 		    step);
 	//apply the current top origin
 	matrix_mult( s->data[ s->top ], tmp );
-	draw_polygons( tmp, vertices, t, z, dcolor, lights, num_lights);
+	draw_polygons( tmp, t, z, dcolor, lights, num_lights);
 	tmp->lastcol = 0;
-	vertices->lastcol = 0;
 	break;
 
       case TORUS:
@@ -344,22 +338,20 @@ void my_main( int polygons ) {
 		   op[i].op.torus.r1,
 		   step);
 	matrix_mult( s->data[ s->top ], tmp );
-	draw_polygons( tmp, vertices, t, z, dcolor, lights, num_lights);
+	draw_polygons( tmp, t, z, dcolor, lights, num_lights);
 	tmp->lastcol = 0;
-	vertices->lastcol = 0;
 	break;
 
       case BOX:
-	add_box( tmp, vertices, op[i].op.box.d0[0],
+	add_box( tmp, op[i].op.box.d0[0],
 		 op[i].op.box.d0[1],
 		 op[i].op.box.d0[2],
 		 op[i].op.box.d1[0],
 		 op[i].op.box.d1[1],
 		 op[i].op.box.d1[2]);
 	matrix_mult( s->data[ s->top ], tmp );
-	draw_polygons( tmp, vertices, t, z, dcolor, lights, num_lights);
+	draw_polygons( tmp, t, z, dcolor, lights, num_lights);
 	tmp->lastcol = 0;
-	vertices->lastcol = 0;
 	break;
 
       case LINE:
@@ -466,7 +458,6 @@ void my_main( int polygons ) {
     }
     free_stack( s );
     free_matrix( tmp );
-    free_matrix( vertices );
     j++;
   }
 }

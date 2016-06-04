@@ -179,60 +179,60 @@ double specular_multiplier(double *normal, double *light, double *view){
 
 /*======== double calculate_vertex_normal() ==========
   Inputs:   struct matrix *points
-            int * vertex  
-  Returns: double *
-     The vertex  normal of that vertex
+
+  Returns: struct matrix *
+     matrix with 6 rows. rows[0-2] are coordinates
+       rows[3-5] hold the corresponding normalized vertix normal
   
 
   05/31/16 20:38:34
   Henry
   ====================*/
-double * calculate_vertex_normals( struct matrix *points) {
+struct matrix * calculate_vertex_normals( struct matrix *points) {
 
   double ax, ay, az, bx, by, bz;
   double vx, vy, vz;
   double dot;
-  double *tmp;
-  
-  struct matrix *unsorted=new_matrix(6,points->lastcol);
+  double *tmp1;
 
+  struct matrix *unsorted=new_matrix(6,points->lastcol);
   int i,j;
   for (i=0;i<points->lastcol;i+=3){
-    tmp=calculate_surface_normal(points,i);
-    for (j=i;j<i+3;i++){
+    tmp1=calculate_surface_normal(points,i);
+    for (j=i;j<i+3;j++){
       unsorted->m[0][j]=(int)points->m[0][i];
       unsorted->m[1][j]=(int)points->m[1][i];
       unsorted->m[2][j]=(int)points->m[2][i];
-      unsorted->m[3][j]=tmp[0];
-      unsorted->m[4][j]=tmp[1];
-      unsorted->m[5][j]=tmp[2];
+      unsorted->m[3][j]=tmp1[0];
+      unsorted->m[4][j]=tmp1[1];
+      unsorted->m[5][j]=tmp1[2];
     }
-    free(tmp);
+    free(tmp1);
   }
   //sort the vertices struct
   struct matrix * sorted=new_matrix(6,0);
-  int sorted;
+  int present;
   double tmp[3];
   int index;
   double magnitude;
   for (i=0;i<unsorted->lastcol;i++){
     //Check if already in sorted
-    sorted=0;
+    present=0;
     for (j=0;j<sorted->lastcol;j++){
       if (sorted->m[0][j] == unsorted->m[0][i] && sorted->m[1][j] == unsorted->m[1][i] && sorted->m[2][j] == unsorted->m[2][i]){
-	sorted=1;
-	i=sorted->lastcol+1;
+	present=1;
+	j=sorted->lastcol+1;
       }
     }
-    if (!sorted){
+    if (!present){
       index=sorted->lastcol;
-      grow_matric(sorted->m,1);
+      grow_matrix(sorted->m,1);
       //Add in the coordinates
       sorted->m[0][index]=unsorted->m[0][i];
       sorted->m[1][index]=unsorted->m[1][i];
       sorted->m[2][index]=unsorted->m[2][i];
       //calculate the vertex normal
-      for (j=0;j<unsorted->lastcol;j++){
+      for (j=i;j<unsorted->lastcol;j++){
 	if (sorted->m[0][index] == unsorted->m[0][j] && sorted->m[1][index] == unsorted->m[1][j] && sorted->m[2][index] == unsorted->m[2][j]){
 	  tmp[0]+=unsorted->m[3][j];
 	  tmp[0]+=unsorted->m[4][j];
@@ -243,14 +243,11 @@ double * calculate_vertex_normals( struct matrix *points) {
       tmp[0]=tmp[0]/magnitude;
       tmp[1]=tmp[1]/magnitude;
       tmp[2]=tmp[2]/magnitude;
-	   
-  sorted->vertex=(double *)malloc(3*points->lastcol);
-  
-  //normalize the vertex normal
-  double magnitude=sqrt(pow(vertex[0],2)+ pow(vertex[1],2)+ pow(vertex[2],2));
-  vertex[0]=vertex[0]/magnitude;
-  vertex[1]=vertex[1]/magnitude;
-  vertex[2]=vertex[2]/magnitude;
-
-  return vertex;
+      sorted->m[3][index]=tmp[0];
+      sorted->m[4][index]=tmp[1];
+      sorted->m[5][index]=tmp[2];
+    }
+    print_matrix(sorted);
+    return sorted;
+  }
 }
