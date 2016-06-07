@@ -67,7 +67,7 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
   double * normal_view=normalize_light(lights[view_vector]);
   //The index of the top,bottom, and middle vertex normals
   int vb,vm,vt;
-  struct matrix *vertices=calculate_vertex_normals(polygons);
+  struct vertex *vertex=calculate_vertex_normals(polygons);
   for( i=0; i < polygons->lastcol-2; i+=3 ) {
     if ( calculate_dot( polygons, i ) < 0 ) {
       //zero out our colors
@@ -321,7 +321,7 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
 	  right_c.green=middle_color.green;
 	  right_c.blue=middle_color.blue;
 	}
-	draw_line(left_x,yb,left_z, right_x,yb,right_z, s,zbuf, left_c, right_c);
+	draw_gouraud_line(left_x,yb,left_z, right_x,yb,right_z, s,zbuf, left_c, right_c);
 	left_x+=bt_inc;
 	left_z+=bt_z;
 	left_c.red+=bm_red;
@@ -1004,6 +1004,153 @@ void draw_line(int x0, int y0, double z0, int x1, int y1, double z1, screen s, z
 	  d = d + dy + dx;
 	  z+=dz;
 	}
+      }
+    }
+  }
+}
+
+void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, screen s, zbuff zbuf, color left_c, color right_c) {
+ 
+  int x, y, d, dx, dy;
+  double z,dz;
+  color tmpc;
+  double red,green,blue;
+
+  x = x0;
+  y = y0;
+  z = z0;
+  
+  //swap points so we're always drawing left to right
+  if ( x0 > x1 ) {
+    x = x1;
+    y = y1;
+    z = z1;
+    tmpc = right_c;
+    x1 = x0;
+    y1 = y0;
+    z1 = z0;
+    right_c=left_c;
+    left_c=tmpc;
+  }
+
+  //need to know dx and dy for this version
+  dx = (x1 - x) * 2;
+  dy = (y1 - y) * 2;
+
+  //positive slope: Octants 1, 2 (5 and 6)
+  if ( dy > 0 ) {
+
+    //slope < 1: Octant 1 (5)
+    if ( dx > dy ) {
+      d = dy - ( dx / 2 );
+      dz = (z1-z)/abs(x1 - x);
+      red = (right_c.red-left_c.red)/abs(x1-x);
+      green = (right_c.green-left_c.green)/abs(x1-x);
+      blue = (right_c.blue-left_c.blue)/abs(x1-x);
+      while ( x <= x1 ) {
+	plot(s, zbuf, left_c, x, y, z);
+
+	if ( d < 0 ) {
+	  x = x + 1;
+	  d = d + dy;
+	  z+=dz;
+	}
+	else {
+	  x = x + 1;
+	  y = y + 1;
+	  d = d + dy - dx;
+	  z+=dz;
+	}
+	left_c.red+=red;
+	left_c.green+=green;
+	left_c.blue+=blue;
+      }
+    }
+
+    //slope > 1: Octant 2 (6)
+    else {
+      d = ( dy / 2 ) - dx;
+      dz = (z1-z)/abs(y1-y);
+      red = (right_c.red-left_c.red)/abs(y1-y);
+      green = (right_c.green-left_c.green)/abs(y1-y);
+      blue = (right_c.blue-left_c.blue)/abs(y1-y);
+      while ( y <= y1 ) {
+
+	plot(s, zbuf, left_c, x, y, z);
+	if ( d > 0 ) {
+	  y = y + 1;
+	  d = d - dx;
+	  z+=dz;
+	}
+	else {
+	  y = y + 1;
+	  x = x + 1;
+	  d = d + dy - dx;
+	  z+=dz;
+	}
+	left_c.red+=red;
+	left_c.green+=green;
+	left_c.blue+=blue;
+      }
+    }
+  }
+
+  //negative slope: Octants 7, 8 (3 and 4)
+  else { 
+
+    //slope > -1: Octant 8 (4)
+    if ( dx > abs(dy) ) {
+
+      d = dy + ( dx / 2 );
+      dz = (z1-z)/abs(x1 - x);
+      red = (right_c.red-left_c.red)/abs(x1-x);
+      green = (right_c.green-left_c.green)/abs(x1-x);
+      blue = (right_c.blue-left_c.blue)/abs(x1-x);
+      while ( x <= x1 ) {
+	plot(s, zbuf, left_c, x, y, z);
+
+	if ( d > 0 ) {
+	  x = x + 1;
+	  d = d + dy;
+	  z+=dz;
+	}
+	else {
+	  x = x + 1;
+	  y = y - 1;
+	  d = d + dy + dx;
+	  z+=dz;
+	}
+	left_c.red+=red;
+	left_c.green+=green;
+	left_c.blue+=blue;
+      }
+    }
+
+    //slope < -1: Octant 7 (3)
+    else {
+
+      d =  (dy / 2) + dx;
+      dz = (z1-z)/abs(y-y1);
+      red = (right_c.red-left_c.red)/abs(y1-y);
+      green = (right_c.green-left_c.green)/abs(y1-y);
+      blue = (right_c.blue-left_c.blue)/abs(y1-y);
+      while ( y >= y1 ) {
+	
+	plot(s, zbuf, left_c, x, y, z);
+	if ( d < 0 ) {
+	  y = y - 1;
+	  d = d + dx;
+	  z+=dz;
+	}
+	else {
+	  y = y - 1;
+	  x = x + 1;
+	  d = d + dy + dx;
+	  z+=dz;
+	}
+	left_c.red+=red;
+	left_c.green+=green;
+	left_c.blue+=blue;
       }
     }
   }

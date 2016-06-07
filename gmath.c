@@ -188,67 +188,67 @@ double specular_multiplier(double *normal, double *light, double *view){
   05/31/16 20:38:34
   Henry
   ====================*/
-struct matrix * calculate_vertex_normals( struct matrix *points) {
+struct vertex * calculate_vertex_normals( struct matrix *points) {
 
   double ax, ay, az, bx, by, bz;
   double vx, vy, vz;
   double dot;
   double *tmp1;
 
-  struct matrix *unsorted=new_matrix(6,points->lastcol);
+  struct vertex *unsorted=(vertex *)malloc(points->cols*sizeof(vertex));
   int i,j;
   for (i=0;i<points->lastcol;i+=3){
     tmp1=calculate_surface_normal(points,i);
     for (j=i;j<i+3;j++){
-      unsorted->m[0][j]=(int)points->m[0][j];
-      unsorted->m[1][j]=(int)points->m[1][j];
-      unsorted->m[2][j]=(int)points->m[2][j];
-      unsorted->m[3][j]=tmp1[0];
-      unsorted->m[4][j]=tmp1[1];
-      unsorted->m[5][j]=tmp1[2];
+      unsorted[j]->c[0]=points->m[0][j];
+      unsorted[j]->c[1]=points->m[1][j];
+      unsorted[j]->c[2]=points->m[2][j];
+      unsorted[j]->n[0]=tmp1[0];
+      unsorted[j]->n[1]=tmp1[1];
+      unsorted[j]->n[2]=tmp1[2];
     }
     free(tmp1);
   }
   //sort the vertices struct
-  struct matrix * sorted=new_matrix(6,1);
+  struct vertex * sorted=(vertex *)malloc(points->cols*sizeof(vertex));
   int present;
   double tmp[3];
-  int index;
+  int index=0;
   double magnitude;
-  for (i=0;unsorted->cols;i++){
+  for (i=0;i<points->cols;i++){
+    //zero out tmp array
+    tmp[0]=0;
+    tmp[1]=0;
+    tmp[2]=0;
     //Check if already in sorted
     present=0;
-    for (j=0;j<sorted->lastcol;j++){
-      if (sorted->m[0][j] == unsorted->m[0][i] && sorted->m[1][j] == unsorted->m[1][i] && sorted->m[2][j] == unsorted->m[2][i]){
+    for (j=0;j<index;j++){
+      if (sorted[j]->c[0] == unsorted[i]->c[0] && sorted[j]->c[1] == unsorted[i]->c[1] && sorted[j]->c[2] == unsorted[i]->c[2]){
 	present=1;
 	j=sorted->lastcol+1;
       }
     }
     if (!present){
-      index=sorted->lastcol;
-      grow_matrix(sorted,1);
-      sorted->lastcol+=1;
       //Add in the coordinates
-      sorted->m[0][index]=unsorted->m[0][i];
-      sorted->m[1][index]=unsorted->m[1][i];
-      sorted->m[2][index]=unsorted->m[2][i];
+      sorted[index]->c[0]=unsorted[i]->c[0];
+      sorted[index]->c[1]=unsorted[i]->c[1];
+      sorted[index]->c[2]=unsorted[i]->c[2];
       //calculate the vertex normal
-      for (j=i;j<unsorted->lastcol;j++){
-	if (sorted->m[0][index] == unsorted->m[0][j] && sorted->m[1][index] == unsorted->m[1][j] && sorted->m[2][index] == unsorted->m[2][j]){
-	  tmp[0]+=unsorted->m[3][j];
-	  tmp[0]+=unsorted->m[4][j];
-	  tmp[0]+=unsorted->m[5][j];
+      for (j=i;j<points->cols;j++){
+	if (sorted[index]->c[0] == unsorted[j]->c[0] && sorted[index]->c[1] == unsorted[j]->c[1] && sorted[index]->c[2] == unsorted[j]->c[2]){
+	  tmp[0]+=unsorted[j]->n[0];
+	  tmp[1]+=unsorted[j]->n[1];
+	  tmp[2]+=unsorted[j]->n[2];
 	}
       }
       magnitude=sqrt(pow(tmp[0],2)+pow(tmp[1],2)+pow(tmp[2],2));
       tmp[0]=tmp[0]/magnitude;
       tmp[1]=tmp[1]/magnitude;
       tmp[2]=tmp[2]/magnitude;
-      sorted->m[3][index]=tmp[0];
-      sorted->m[4][index]=tmp[1];
-      sorted->m[5][index]=tmp[2];
-      print_matrix(sorted);
+      sorted[index]->n[0]=tmp[0];
+      sorted[index]->n[1]=tmp[1];
+      sorted[index]->n[2]=tmp[2];
     }
-    return sorted;
   }
+  return sorted;
 }
