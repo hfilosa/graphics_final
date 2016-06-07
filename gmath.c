@@ -200,9 +200,9 @@ struct matrix * calculate_vertex_normals( struct matrix *points) {
   for (i=0;i<points->lastcol;i+=3){
     tmp1=calculate_surface_normal(points,i);
     for (j=i;j<i+3;j++){
-      unsorted->m[0][j]=(int)points->m[0][i];
-      unsorted->m[1][j]=(int)points->m[1][i];
-      unsorted->m[2][j]=(int)points->m[2][i];
+      unsorted->m[0][j]=(int)points->m[0][j];
+      unsorted->m[1][j]=(int)points->m[1][j];
+      unsorted->m[2][j]=(int)points->m[2][j];
       unsorted->m[3][j]=tmp1[0];
       unsorted->m[4][j]=tmp1[1];
       unsorted->m[5][j]=tmp1[2];
@@ -210,12 +210,12 @@ struct matrix * calculate_vertex_normals( struct matrix *points) {
     free(tmp1);
   }
   //sort the vertices struct
-  struct matrix * sorted=new_matrix(6,0);
+  struct matrix * sorted=new_matrix(6,1);
   int present;
   double tmp[3];
   int index;
   double magnitude;
-  for (i=0;i<unsorted->lastcol;i++){
+  for (i=0;unsorted->cols;i++){
     //Check if already in sorted
     present=0;
     for (j=0;j<sorted->lastcol;j++){
@@ -226,7 +226,8 @@ struct matrix * calculate_vertex_normals( struct matrix *points) {
     }
     if (!present){
       index=sorted->lastcol;
-      grow_matrix(sorted->m,1);
+      grow_matrix(sorted,1);
+      sorted->lastcol+=1;
       //Add in the coordinates
       sorted->m[0][index]=unsorted->m[0][i];
       sorted->m[1][index]=unsorted->m[1][i];
@@ -246,8 +247,8 @@ struct matrix * calculate_vertex_normals( struct matrix *points) {
       sorted->m[3][index]=tmp[0];
       sorted->m[4][index]=tmp[1];
       sorted->m[5][index]=tmp[2];
+      print_matrix(sorted);
     }
-    print_matrix(sorted);
     return sorted;
   }
 }

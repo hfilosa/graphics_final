@@ -67,9 +67,7 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
   double * normal_view=normalize_light(lights[view_vector]);
   //The index of the top,bottom, and middle vertex normals
   int vb,vm,vt;
-  printf("Before vertices\n");
   struct matrix *vertices=calculate_vertex_normals(polygons);
-  printf("After vertices\n");
   for( i=0; i < polygons->lastcol-2; i+=3 ) {
     if ( calculate_dot( polygons, i ) < 0 ) {
       //zero out our colors
@@ -307,36 +305,41 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
 	double mt_green=(middle_color.green-bottom_color.green)/(yt-ym);
 	double mt_blue=(middle_color.blue-bottom_color.blue)/(yt-ym);
       }
-      c.red=bottom_color.red;
-      c.green=bottom_color.green;
-      c.blue=bottom_color.blue;
+      color left_c,right_c;
+      left_c.red=bottom_color.red;
+      left_c.green=bottom_color.green;
+      left_c.blue=bottom_color.blue;
+      right_c.red=bottom_color.red;
+      right_c.green=bottom_color.green;
+      right_c.blue=bottom_color.blue;
       while (yb<yt){
 	if (!passed_middle && yb>=ym){
 	  right_x=xm;
 	  right_z=zm;
 	  passed_middle=1;
-	  c.red=middle_color.red;
-	  c.green=middle_color.green;
-	  c.blue=middle_color.blue;
+	  right_c.red=middle_color.red;
+	  right_c.green=middle_color.green;
+	  right_c.blue=middle_color.blue;
 	}
-	draw_line(left_x,yb,left_z, right_x,yb,right_z, s,zbuf,c);
+	draw_line(left_x,yb,left_z, right_x,yb,right_z, s,zbuf, left_c, right_c);
+	left_x+=bt_inc;
+	left_z+=bt_z;
+	left_c.red+=bm_red;
+	left_c.green+=bm_green;
+	left_c.blue+=bm_blue;
 	if (yb>=ym){
-	  left_x+=bt_inc;
-	  left_z+=bt_z;
 	  right_x+=mt_inc;
 	  right_z+=mt_z;
-	  c.red+=mt_red;
-	  c.green+=mt_green;
-	  c.blue+=mt_blue;
+	  right_c.red+=mt_red;
+	  right_c.green+=mt_green;
+	  right_c.blue+=mt_blue;
 	}
 	else{
-	  left_x+=bt_inc;
-	  left_z+=bt_z;
 	  right_x+=bm_inc;
 	  right_z+=bm_z;
-	  c.red+=bm_red;
-	  c.green+=bm_green;
-	  c.blue+=bm_blue;
+	  right_c.red+=bm_red;
+	  right_c.green+=bm_green;
+	  right_c.blue+=bm_blue;
 	}
 	yb+=1;
       }
