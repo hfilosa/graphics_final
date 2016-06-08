@@ -67,7 +67,7 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
   double * normal_view=normalize_light(lights[view_vector]);
   //The index of the top,bottom, and middle vertex normals
   int vb,vm,vt;
-  struct vertex *vertex=calculate_vertex_normals(polygons);
+  struct vertex *vertices=calculate_vertex_normals(polygons);
   for( i=0; i < polygons->lastcol-2; i+=3 ) {
     if ( calculate_dot( polygons, i ) < 0 ) {
       //zero out our colors
@@ -137,22 +137,31 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       double bvertex[3];
       double mvertex[3];
       double tvertex[3];
-      for (j=0;j<vertices->lastcol;j++){
-	if (vertices->m[0][j]==polygons->m[0][vb] && vertices->m[1][j]==polygons->m[1][vb] && vertices->m[2][j]==polygons->m[2][vb]){
-	  bvertex[0]=vertices->m[3][j];
-	  bvertex[1]=vertices->m[4][j];
-	  bvertex[2]=vertices->m[5][j];
+      //Use ints to speed search through boolean short circuiting
+      int bfound=0;
+      int mfound=0;
+      int tfound=0;
+      for (j=0;j<polygons->lastcol;j++){
+	if (!bfound && vertices[j].c[0]==polygons->m[0][vb] && vertices[j].c[1]==polygons->m[1][vb] && vertices[j].c[2]==polygons->m[2][vb]){
+	  bvertex[0]=vertices[j].n[0];
+	  bvertex[1]=vertices[j].n[1];
+	  bvertex[2]=vertices[j].n[2];
+	  bfound=1;
 	}
-	if (vertices->m[0][j]==polygons->m[0][vm] && vertices->m[1][j]==polygons->m[1][vm] && vertices->m[2][j]==polygons->m[2][vm]){
-	mvertex[0]=vertices->m[3][j];
-	mvertex[1]=vertices->m[4][j];
-	mvertex[2]=vertices->m[5][j];
+	if (!mfound && vertices[j].c[0]==polygons->m[0][vm] && vertices[j].c[1]==polygons->m[1][vm] && vertices[j].c[2]==polygons->m[2][vm]){
+	  mvertex[0]=vertices[j].n[0];
+	  mvertex[1]=vertices[j].n[1];
+	  mvertex[2]=vertices[j].n[2];
+	  mfound=1;
 	}
-	if (vertices->m[0][j]==polygons->m[0][vt] && vertices->m[1][j]==polygons->m[1][vt] && vertices->m[2][j]==polygons->m[2][vt]){
-	tvertex[0]=vertices->m[3][j];
-	tvertex[1]=vertices->m[4][j];
-	tvertex[2]=vertices->m[5][j];
+	if (!tfound && vertices[j].c[0]==polygons->m[0][vt] && vertices[j].c[1]==polygons->m[1][vt] && vertices[j].c[2]==polygons->m[2][vt]){
+	  tvertex[0]=vertices[j].n[0];
+	  tvertex[1]=vertices[j].n[1];
+	  tvertex[2]=vertices[j].n[2];
+	  tfound=1;
 	}
+	if (tfound && mfound && bfound)
+	  j=polygons->lastcol+1;
       }
       /*
       //Calculate diffuse and specular lighting for each point light source
@@ -295,6 +304,7 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       int passed_middle=0;
       //Color interpolation
       double bm_red,bm_green,bm_blue,mt_red,mt_green,mt_blue;
+      printf("Starting to get color increments\n");
       if (ym != yb){
 	double bm_red=(middle_color.red-bottom_color.red)/(ym-yb);
 	double bm_green=(middle_color.green-bottom_color.green)/(ym-yb);
@@ -305,6 +315,7 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
 	double mt_green=(middle_color.green-bottom_color.green)/(yt-ym);
 	double mt_blue=(middle_color.blue-bottom_color.blue)/(yt-ym);
       }
+      printf("gotte\n");
       color left_c,right_c;
       left_c.red=bottom_color.red;
       left_c.green=bottom_color.green;
@@ -321,7 +332,9 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
 	  right_c.green=middle_color.green;
 	  right_c.blue=middle_color.blue;
 	}
+	printf("after me\n");
 	draw_gouraud_line(left_x,yb,left_z, right_x,yb,right_z, s,zbuf, left_c, right_c);
+	printf("dasd\n");
 	left_x+=bt_inc;
 	left_z+=bt_z;
 	left_c.red+=bm_red;
@@ -1014,13 +1027,15 @@ void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, scr
   int x, y, d, dx, dy;
   double z,dz;
   color tmpc;
-  double red,green,blue;
+  double bred,green,blue;
+  double red;
 
   x = x0;
   y = y0;
   z = z0;
   
   //swap points so we're always drawing left to right
+  printf("-1\n");
   if ( x0 > x1 ) {
     x = x1;
     y = y1;
@@ -1032,14 +1047,14 @@ void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, scr
     right_c=left_c;
     left_c=tmpc;
   }
-
+  printf("0\n");
   //need to know dx and dy for this version
   dx = (x1 - x) * 2;
   dy = (y1 - y) * 2;
 
   //positive slope: Octants 1, 2 (5 and 6)
+  printf("1\n");
   if ( dy > 0 ) {
-
     //slope < 1: Octant 1 (5)
     if ( dx > dy ) {
       d = dy - ( dx / 2 );
@@ -1066,9 +1081,9 @@ void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, scr
 	left_c.blue+=blue;
       }
     }
-
     //slope > 1: Octant 2 (6)
     else {
+      printf("2\n");
       d = ( dy / 2 ) - dx;
       dz = (z1-z)/abs(y1-y);
       red = (right_c.red-left_c.red)/abs(y1-y);
@@ -1097,7 +1112,7 @@ void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, scr
 
   //negative slope: Octants 7, 8 (3 and 4)
   else { 
-
+    printf("3\n");
     //slope > -1: Octant 8 (4)
     if ( dx > abs(dy) ) {
 
@@ -1128,12 +1143,19 @@ void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, scr
 
     //slope < -1: Octant 7 (3)
     else {
-
+      printf("4\n");
       d =  (dy / 2) + dx;
+      printf("5\n");
+      printf("%d %d\n",y,y1);
       dz = (z1-z)/abs(y-y1);
-      red = (right_c.red-left_c.red)/abs(y1-y);
-      green = (right_c.green-left_c.green)/abs(y1-y);
-      blue = (right_c.blue-left_c.blue)/abs(y1-y);
+      printf("6\n");
+      printf("%f %f\n",right_c.red,left_c.red);
+      printf("%d %d\n",y,y1);
+      bred = (right_c.red-left_c.red)/abs(y-y1);
+      printf("7\n");
+      green = (right_c.green-left_c.green)/abs(y-y1);
+      blue = (right_c.blue-left_c.blue)/abs(y-y1);
+      printf("5\n");
       while ( y >= y1 ) {
 	
 	plot(s, zbuf, left_c, x, y, z);

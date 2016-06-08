@@ -195,22 +195,22 @@ struct vertex * calculate_vertex_normals( struct matrix *points) {
   double dot;
   double *tmp1;
 
-  struct vertex *unsorted=(vertex *)malloc(points->cols*sizeof(vertex));
+  struct vertex *unsorted=(struct vertex *)malloc(points->cols*sizeof(struct vertex));
   int i,j;
   for (i=0;i<points->lastcol;i+=3){
     tmp1=calculate_surface_normal(points,i);
     for (j=i;j<i+3;j++){
-      unsorted[j]->c[0]=points->m[0][j];
-      unsorted[j]->c[1]=points->m[1][j];
-      unsorted[j]->c[2]=points->m[2][j];
-      unsorted[j]->n[0]=tmp1[0];
-      unsorted[j]->n[1]=tmp1[1];
-      unsorted[j]->n[2]=tmp1[2];
+      unsorted[j].c[0]=points->m[0][j];
+      unsorted[j].c[1]=points->m[1][j];
+      unsorted[j].c[2]=points->m[2][j];
+      unsorted[j].n[0]=tmp1[0];
+      unsorted[j].n[1]=tmp1[1];
+      unsorted[j].n[2]=tmp1[2];
     }
     free(tmp1);
   }
   //sort the vertices struct
-  struct vertex * sorted=(vertex *)malloc(points->cols*sizeof(vertex));
+  struct vertex * sorted=(struct vertex *)malloc(points->cols*sizeof(struct vertex));
   int present;
   double tmp[3];
   int index=0;
@@ -223,31 +223,32 @@ struct vertex * calculate_vertex_normals( struct matrix *points) {
     //Check if already in sorted
     present=0;
     for (j=0;j<index;j++){
-      if (sorted[j]->c[0] == unsorted[i]->c[0] && sorted[j]->c[1] == unsorted[i]->c[1] && sorted[j]->c[2] == unsorted[i]->c[2]){
+      if (sorted[j].c[0] == unsorted[i].c[0] && sorted[j].c[1] == unsorted[i].c[1] && sorted[j].c[2] == unsorted[i].c[2]){
 	present=1;
-	j=sorted->lastcol+1;
+	j=index+1;
       }
     }
     if (!present){
       //Add in the coordinates
-      sorted[index]->c[0]=unsorted[i]->c[0];
-      sorted[index]->c[1]=unsorted[i]->c[1];
-      sorted[index]->c[2]=unsorted[i]->c[2];
+      sorted[index].c[0]=unsorted[i].c[0];
+      sorted[index].c[1]=unsorted[i].c[1];
+      sorted[index].c[2]=unsorted[i].c[2];
       //calculate the vertex normal
       for (j=i;j<points->cols;j++){
-	if (sorted[index]->c[0] == unsorted[j]->c[0] && sorted[index]->c[1] == unsorted[j]->c[1] && sorted[index]->c[2] == unsorted[j]->c[2]){
-	  tmp[0]+=unsorted[j]->n[0];
-	  tmp[1]+=unsorted[j]->n[1];
-	  tmp[2]+=unsorted[j]->n[2];
+	if (sorted[index].c[0] == unsorted[j].c[0] && sorted[index].c[1] == unsorted[j].c[1] && sorted[index].c[2] == unsorted[j].c[2]){
+	  tmp[0]+=unsorted[j].n[0];
+	  tmp[1]+=unsorted[j].n[1];
+	  tmp[2]+=unsorted[j].n[2];
 	}
       }
       magnitude=sqrt(pow(tmp[0],2)+pow(tmp[1],2)+pow(tmp[2],2));
       tmp[0]=tmp[0]/magnitude;
       tmp[1]=tmp[1]/magnitude;
       tmp[2]=tmp[2]/magnitude;
-      sorted[index]->n[0]=tmp[0];
-      sorted[index]->n[1]=tmp[1];
-      sorted[index]->n[2]=tmp[2];
+      sorted[index].n[0]=tmp[0];
+      sorted[index].n[1]=tmp[1];
+      sorted[index].n[2]=tmp[2];
+      index+=1;
     }
   }
   return sorted;
