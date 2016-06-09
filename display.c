@@ -80,6 +80,9 @@ void plot( screen s, zbuff zbuf,color c, int x, int y, double z) {
   if ( x >= 0 && x < XRES && newy >=0 && newy < YRES )
     if (z > zbuf[x][newy]){
       zbuf[x][newy]=z;
+      c.red=(int)c.red;
+      c.green=(int)c.green;
+      c.blue=(int)c.blue;
       s[x][newy] = c;
     }
 }

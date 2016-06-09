@@ -257,7 +257,7 @@ void my_main( int polygons ) {
 
   //Declare our default reflectivity values
   struct constants dcolor;
-  dcolor.r[Kambient]=.3;
+  dcolor.r[Kambient]=.4;
   dcolor.g[Kambient]=0;
   dcolor.b[Kambient]=0;
 
@@ -265,16 +265,16 @@ void my_main( int polygons ) {
   dcolor.g[Kdiffuse]=0;
   dcolor.b[Kdiffuse]=0;
 
-  dcolor.r[Kspecular]=.4;
+  dcolor.r[Kspecular]=.3;
   dcolor.g[Kspecular]=0;
   dcolor.b[Kspecular]=0;
 
   //Lights array
   struct light lights[10];
   //Define default ambient lighting
-  lights[Kambient].c[Lred]=100;
-  lights[Kambient].c[Lgreen]=100;
-  lights[Kambient].c[Lblue]=100;
+  lights[Kambient].c[Lred]=200;
+  lights[Kambient].c[Lgreen]=200;
+  lights[Kambient].c[Lblue]=200;
   //We will also store our view vector in here. Be careful about changing this!
   lights[view_vector].l[x_vector]=0;
   lights[view_vector].l[y_vector]=0;

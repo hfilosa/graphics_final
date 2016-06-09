@@ -55,8 +55,8 @@ jdyrlandweaver
 & Henry
 ====================*/
 void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct constants k, struct light *lights, int num_lights) {
-  color c, ambient_color, bottom_color, middle_color, top_color;
   int i,j,b;
+  color c, ambient_color, bottom_color, middle_color, top_color;
   int magic_num;
   double xb,yb,zb, xt,yt,zt, xm,ym,zm;
   //The bottom to top x increment (bt), bottom to middle(bm), middle to top(mt)
@@ -68,13 +68,24 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
   //The index of the top,bottom, and middle vertex normals
   int vb,vm,vt;
   struct vertex *vertices=calculate_vertex_normals(polygons);
+ //Calculate ambient lighting
+  ambient_color.red=k.r[Kambient]*lights[Kambient].c[Lred];
+  ambient_color.green=k.g[Kambient]*lights[Kambient].c[Lgreen];
+  ambient_color.blue=k.b[Kambient]*lights[Kambient].c[Lblue];
   for( i=0; i < polygons->lastcol-2; i+=3 ) {
     if ( calculate_dot( polygons, i ) < 0 ) {
-      //zero out our colors
       c.red=0;
       c.green=0;
       c.blue=0;
-
+      bottom_color.red=0;
+      bottom_color.green=0;
+      bottom_color.blue=0;
+      middle_color.red=0;
+      middle_color.green=0;
+      middle_color.blue=0;
+      top_color.red=0;
+      top_color.green=0;
+      top_color.blue=0;
       //Figure out which points are the top,bottom and middle
       //Also figure out  top,bottom and middle vertex normals
       xt=polygons->m[0][i];
@@ -123,16 +134,7 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       bt_z=(zt-zb)/(yt-yb);
       mt_z=(zt-zm)/(yt-ym);
       bm_z=(zm-zb)/(ym-yb);
-
-      //Calculate ambient lighting
-      ambient_color.red=k.r[Kambient]*lights[Kambient].c[Lred];
-      ambient_color.green=k.g[Kambient]*lights[Kambient].c[Lgreen];
-      ambient_color.blue=k.b[Kambient]*lights[Kambient].c[Lblue];
       
-      ambient_color.red>255 ? ambient_color.red=255 : ambient_color.red;
-      ambient_color.green>255 ? ambient_color.green=255 : ambient_color.green;
-      ambient_color.blue>255 ? ambient_color.blue=255 : ambient_color.blue;
-
       //Find the indices of the bottom,top, and middle vertices in the vertices matrix 
       double bvertex[3];
       double mvertex[3];
@@ -142,19 +144,20 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       int mfound=0;
       int tfound=0;
       for (j=0;j<polygons->lastcol;j++){
-	if (!bfound && vertices[j].c[0]==polygons->m[0][vb] && vertices[j].c[1]==polygons->m[1][vb] && vertices[j].c[2]==polygons->m[2][vb]){
+	//	printf("Coords: %d %d %d vertex: %f %f %f index:%d\n",vertices[j].c[0],vertices[j].c[1],vertices[j].c[2],vertices[j].n[0],vertices[j].n[1],vertices[j].n[2],j);
+	if (!bfound && vertices[j].c[0]==xb && vertices[j].c[1]==yb && vertices[j].c[2]==zb){
 	  bvertex[0]=vertices[j].n[0];
 	  bvertex[1]=vertices[j].n[1];
 	  bvertex[2]=vertices[j].n[2];
 	  bfound=1;
 	}
-	if (!mfound && vertices[j].c[0]==polygons->m[0][vm] && vertices[j].c[1]==polygons->m[1][vm] && vertices[j].c[2]==polygons->m[2][vm]){
+	if (!mfound && vertices[j].c[0]==xm && vertices[j].c[1]==ym && vertices[j].c[2]==zb){
 	  mvertex[0]=vertices[j].n[0];
 	  mvertex[1]=vertices[j].n[1];
 	  mvertex[2]=vertices[j].n[2];
 	  mfound=1;
 	}
-	if (!tfound && vertices[j].c[0]==polygons->m[0][vt] && vertices[j].c[1]==polygons->m[1][vt] && vertices[j].c[2]==polygons->m[2][vt]){
+	if (!tfound && vertices[j].c[0]==xt && vertices[j].c[1]==yt && vertices[j].c[2]==zt){
 	  tvertex[0]=vertices[j].n[0];
 	  tvertex[1]=vertices[j].n[1];
 	  tvertex[2]=vertices[j].n[2];
@@ -163,7 +166,8 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
 	if (tfound && mfound && bfound)
 	  j=polygons->lastcol+1;
       }
-      /*
+      
+      /* flat shading
       //Calculate diffuse and specular lighting for each point light source
       int l;
       //The normalized surface normal
@@ -195,7 +199,6 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       free(surface_normal);
       */
 
-      printf("bottom vertex\n");
       //Calculate diffuse and specular lighting for bottom vertex for each light source
       int l;
       //The normalized light
@@ -231,7 +234,6 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       bottom_color.green>255 ? bottom_color.green=255 : 0;
       bottom_color.blue>255 ? bottom_color.blue=255 : 0;
 
-      printf("middle vertex index: %d\n",vm);
       //Calculate diffuse and specular lighting for middle vertex for each light source
       for (l=num_lights;l>0;l--){
 	normal_light=normalize_light(lights[l]);
@@ -261,8 +263,8 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       middle_color.green>255 ? middle_color.green=255 : 0;
       middle_color.blue>255 ? middle_color.blue=255 : 0;
 
-      printf("top vertex\n");
       //Calculate diffuse and specular lighting for top vertex for each light source
+      //printf("top normal %f %f %f\n",tvertex[0],tvertex[1],tvertex[2]);
       for (l=num_lights;l>0;l--){
 	normal_light=normalize_light(lights[l]);
 	theta=diffuse_multiplier(tvertex,normal_light);
@@ -304,7 +306,6 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       int passed_middle=0;
       //Color interpolation
       double bm_red,bm_green,bm_blue,mt_red,mt_green,mt_blue;
-      printf("Starting to get color increments\n");
       if (ym != yb){
 	double bm_red=(middle_color.red-bottom_color.red)/(ym-yb);
 	double bm_green=(middle_color.green-bottom_color.green)/(ym-yb);
@@ -315,7 +316,9 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
 	double mt_green=(middle_color.green-bottom_color.green)/(yt-ym);
 	double mt_blue=(middle_color.blue-bottom_color.blue)/(yt-ym);
       }
-      printf("gotte\n");
+      double bt_red=(top_color.red-bottom_color.red)/(yt-yb);
+      double bt_green=(top_color.green-bottom_color.green)/(yt-yb);
+      double bt_blue=(top_color.blue-bottom_color.blue)/(yt-yb);
       color left_c,right_c;
       left_c.red=bottom_color.red;
       left_c.green=bottom_color.green;
@@ -323,6 +326,9 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       right_c.red=bottom_color.red;
       right_c.green=bottom_color.green;
       right_c.blue=bottom_color.blue;
+      //printf("Bottom color %d %d %d\n",bottom_color.red,bottom_color.green,bottom_color.blue);
+      //printf("Middle color %d %d %d\n",middle_color.red,middle_color.green,middle_color.blue);
+      //printf("top color %d %d %d\n",top_color.red,top_color.green,top_color.blue);
       while (yb<yt){
 	if (!passed_middle && yb>=ym){
 	  right_x=xm;
@@ -332,14 +338,12 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
 	  right_c.green=middle_color.green;
 	  right_c.blue=middle_color.blue;
 	}
-	printf("after me\n");
 	draw_gouraud_line(left_x,yb,left_z, right_x,yb,right_z, s,zbuf, left_c, right_c);
-	printf("dasd\n");
 	left_x+=bt_inc;
 	left_z+=bt_z;
-	left_c.red+=bm_red;
-	left_c.green+=bm_green;
-	left_c.blue+=bm_blue;
+	left_c.red+=bt_red;
+	left_c.green+=bt_green;
+	left_c.blue+=bt_blue;
 	if (yb>=ym){
 	  right_x+=mt_inc;
 	  right_z+=mt_z;
@@ -356,27 +360,28 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
 	}
 	yb+=1;
       }
-      draw_line( polygons->m[0][i],
+      /*draw_line( polygons->m[0][i],
 		 polygons->m[1][i],
 		 polygons->m[2][i],
 		 polygons->m[0][i+1],
 		 polygons->m[1][i+1],
 		 polygons->m[2][i+1],
 		 s, zbuf, c);
-      draw_line( polygons->m[0][i+1],
+    draw_line( polygons->m[0][i+1],
 		 polygons->m[1][i+1], 
 		 polygons->m[2][i+1],
 		 polygons->m[0][i+2],
 		 polygons->m[1][i+2],
 		 polygons->m[2][i+2],
 		 s, zbuf, c);
-      draw_line( polygons->m[0][i+2],
+   draw_line( polygons->m[0][i+2],
 		 polygons->m[1][i+2],
 		 polygons->m[2][i+2],
 		 polygons->m[0][i],
 		 polygons->m[1][i],
 		 polygons->m[2][i],
 		 s, zbuf, c);
+      */
     }
   }
   free(normal_view);
@@ -1027,33 +1032,38 @@ void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, scr
   int x, y, d, dx, dy;
   double z,dz;
   color tmpc;
-  double bred,green,blue;
-  double red;
+  int red,green,blue;
+  red=0;
+  green=0;
+  blue=0;
 
   x = x0;
   y = y0;
   z = z0;
   
   //swap points so we're always drawing left to right
-  printf("-1\n");
   if ( x0 > x1 ) {
     x = x1;
     y = y1;
     z = z1;
-    tmpc = right_c;
     x1 = x0;
     y1 = y0;
     z1 = z0;
-    right_c=left_c;
-    left_c=tmpc;
+    tmpc.red=right_c.red;
+    tmpc.blue=right_c.blue;
+    tmpc.green=right_c.green;
+    right_c.red=left_c.red;
+    right_c.green=left_c.green;
+    right_c.blue=left_c.blue;
+    left_c.red=tmpc.red;
+    left_c.green=tmpc.green;
+    left_c.blue=tmpc.blue;
   }
-  printf("0\n");
-  //need to know dx and dy for this version
+  //Need to know dx and dy for this version
   dx = (x1 - x) * 2;
   dy = (y1 - y) * 2;
 
   //positive slope: Octants 1, 2 (5 and 6)
-  printf("1\n");
   if ( dy > 0 ) {
     //slope < 1: Octant 1 (5)
     if ( dx > dy ) {
@@ -1083,7 +1093,6 @@ void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, scr
     }
     //slope > 1: Octant 2 (6)
     else {
-      printf("2\n");
       d = ( dy / 2 ) - dx;
       dz = (z1-z)/abs(y1-y);
       red = (right_c.red-left_c.red)/abs(y1-y);
@@ -1112,7 +1121,6 @@ void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, scr
 
   //negative slope: Octants 7, 8 (3 and 4)
   else { 
-    printf("3\n");
     //slope > -1: Octant 8 (4)
     if ( dx > abs(dy) ) {
 
@@ -1143,19 +1151,11 @@ void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, scr
 
     //slope < -1: Octant 7 (3)
     else {
-      printf("4\n");
       d =  (dy / 2) + dx;
-      printf("5\n");
-      printf("%d %d\n",y,y1);
       dz = (z1-z)/abs(y-y1);
-      printf("6\n");
-      printf("%f %f\n",right_c.red,left_c.red);
-      printf("%d %d\n",y,y1);
-      bred = (right_c.red-left_c.red)/abs(y-y1);
-      printf("7\n");
-      green = (right_c.green-left_c.green)/abs(y-y1);
-      blue = (right_c.blue-left_c.blue)/abs(y-y1);
-      printf("5\n");
+      red = ((double)(right_c.red-left_c.red))/abs(y-y1);
+      green = ((double)(right_c.green-left_c.green))/abs(y-y1);
+      blue = ((double)(right_c.blue-left_c.blue))/abs(y-y1);
       while ( y >= y1 ) {
 	
 	plot(s, zbuf, left_c, x, y, z);
