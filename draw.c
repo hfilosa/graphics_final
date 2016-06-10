@@ -305,20 +305,22 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       double right_z=zb;
       int passed_middle=0;
       //Color interpolation
-      double bm_red,bm_green,bm_blue,mt_red,mt_green,mt_blue;
+      double bm_red,bm_green,bm_blue,mt_red,mt_green,mt_blue,bt_red,bt_green,bt_blue;
       if (ym != yb){
-	double bm_red=(middle_color.red-bottom_color.red)/(ym-yb);
-	double bm_green=(middle_color.green-bottom_color.green)/(ym-yb);
-	double bm_blue=(middle_color.blue-bottom_color.blue)/(ym-yb);
+	bm_red=(middle_color.red-bottom_color.red)/(ym-yb);
+	bm_green=(middle_color.green-bottom_color.green)/(ym-yb);
+	bm_blue=(middle_color.blue-bottom_color.blue)/(ym-yb);
       }
       if (ym != yt){
-	double mt_red=(middle_color.red-bottom_color.red)/(yt-ym);
-	double mt_green=(middle_color.green-bottom_color.green)/(yt-ym);
-	double mt_blue=(middle_color.blue-bottom_color.blue)/(yt-ym);
+	mt_red=(middle_color.red-bottom_color.red)/(yt-ym);
+	mt_green=(middle_color.green-bottom_color.green)/(yt-ym);
+	mt_blue=(middle_color.blue-bottom_color.blue)/(yt-ym);
       }
-      double bt_red=(top_color.red-bottom_color.red)/(yt-yb);
-      double bt_green=(top_color.green-bottom_color.green)/(yt-yb);
-      double bt_blue=(top_color.blue-bottom_color.blue)/(yt-yb);
+      if (yt != yb){
+	bt_red=(top_color.red-bottom_color.red)/(yt-yb);
+	bt_green=(top_color.green-bottom_color.green)/(yt-yb);
+	bt_blue=(top_color.blue-bottom_color.blue)/(yt-yb);
+      }
       color left_c,right_c;
       left_c.red=bottom_color.red;
       left_c.green=bottom_color.green;
