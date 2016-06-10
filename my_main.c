@@ -257,15 +257,15 @@ void my_main( int polygons ) {
 
   //Declare our default reflectivity values
   struct constants dcolor;
-  dcolor.r[Kambient]=.4;
+  dcolor.r[Kambient]=0;
   dcolor.g[Kambient]=0;
   dcolor.b[Kambient]=0;
 
-  dcolor.r[Kdiffuse]=.3;
+  dcolor.r[Kdiffuse]=1;
   dcolor.g[Kdiffuse]=0;
   dcolor.b[Kdiffuse]=0;
 
-  dcolor.r[Kspecular]=.3;
+  dcolor.r[Kspecular]=0;
   dcolor.g[Kspecular]=0;
   dcolor.b[Kspecular]=0;
 

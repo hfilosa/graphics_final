@@ -200,9 +200,9 @@ struct vertex * calculate_vertex_normals( struct matrix *points) {
   for (i=0;i<points->lastcol;i+=3){
     tmp1=calculate_surface_normal(points,i);
     for (j=i;j<i+3;j++){
-      unsorted[j].c[0]=points->m[0][j];
-      unsorted[j].c[1]=points->m[1][j];
-      unsorted[j].c[2]=points->m[2][j];
+      unsorted[j].c[0]=(int)points->m[0][j];
+      unsorted[j].c[1]=(int)points->m[1][j];
+      unsorted[j].c[2]=(int)points->m[2][j];
       unsorted[j].n[0]=tmp1[0];
       unsorted[j].n[1]=tmp1[1];
       unsorted[j].n[2]=tmp1[2];
@@ -230,9 +230,9 @@ struct vertex * calculate_vertex_normals( struct matrix *points) {
     }
     if (!present){
       //Add in the coordinates
-      sorted[index].c[0]=unsorted[i].c[0];
-      sorted[index].c[1]=unsorted[i].c[1];
-      sorted[index].c[2]=unsorted[i].c[2];
+      sorted[index].c[0]=(int)unsorted[i].c[0];
+      sorted[index].c[1]=(int)unsorted[i].c[1];
+      sorted[index].c[2]=(int)unsorted[i].c[2];
       //calculate the vertex normal
       for (j=i;j<points->cols;j++){
 	if (sorted[index].c[0] == unsorted[j].c[0] && sorted[index].c[1] == unsorted[j].c[1] && sorted[index].c[2] == unsorted[j].c[2]){

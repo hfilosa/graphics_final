@@ -87,6 +87,30 @@ void plot( screen s, zbuff zbuf,color c, int x, int y, double z) {
     }
 }
 
+/*======== void double_plot() ==========
+Inputs:   screen s
+         double_color c
+         int x
+         int y 
+Returns: 
+Version of plot that takes color values stored as doubles, will still add them to the screen as ints.
+
+06/10/16 13:37:00
+hfilosa
+====================*/
+void double_plot( screen s, zbuff zbuf,double_color double_c, int x, int y, double z) {
+  int newy = YRES - 1 - y;
+  if ( x >= 0 && x < XRES && newy >=0 && newy < YRES )
+    if (z > zbuf[x][newy]){
+      zbuf[x][newy]=z;
+      color c;
+      c.red=(int)double_c.red;
+      c.green=(int)double_c.green;
+      c.blue=(int)double_c.blue;
+      s[x][newy] = c;
+    }
+}
+
 /*======== void clear_screen() ==========
 Inputs:   screen s  
 Returns: 

@@ -38,6 +38,15 @@ struct point_t {
 */
 typedef struct point_t color;
 
+//A point struct that stores color as a double
+struct double_point_t {
+  double red;
+  double green;
+  double blue;
+} double_point_t;
+
+typedef struct double_point_t double_color;
+
 /*
   Likewise, we can use screen as a data type representing
   an XRES x YRES array of colors.

@@ -11,7 +11,7 @@ void draw_line(int x0, int y0, double z0,
 	       screen s, zbuff zbuf, color c);
 void draw_gouraud_line(int x0, int y0, double z0,
 	       int x1, int y1, double z1,
-		       screen s, zbuff zbuf, color left_c, color right_c);
+		       screen s, zbuff zbuf, double_color left_c, double_color right_c);
 void add_point( struct matrix * points, 
 		 double x, double y, double z);
 void add_edge( struct matrix * points, 

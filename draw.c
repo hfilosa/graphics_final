@@ -56,7 +56,7 @@ jdyrlandweaver
 ====================*/
 void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct constants k, struct light *lights, int num_lights) {
   int i,j,b;
-  color c, ambient_color, bottom_color, middle_color, top_color;
+  double_color c, ambient_color, bottom_color, middle_color, top_color;
   int magic_num;
   double xb,yb,zb, xt,yt,zt, xm,ym,zm;
   //The bottom to top x increment (bt), bottom to middle(bm), middle to top(mt)
@@ -145,19 +145,19 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       int tfound=0;
       for (j=0;j<polygons->lastcol;j++){
 	//	printf("Coords: %d %d %d vertex: %f %f %f index:%d\n",vertices[j].c[0],vertices[j].c[1],vertices[j].c[2],vertices[j].n[0],vertices[j].n[1],vertices[j].n[2],j);
-	if (!bfound && vertices[j].c[0]==xb && vertices[j].c[1]==yb && vertices[j].c[2]==zb){
+	if (!bfound && vertices[j].c[0]==(int)xb && vertices[j].c[1]==(int)yb && vertices[j].c[2]==(int)zb){
 	  bvertex[0]=vertices[j].n[0];
 	  bvertex[1]=vertices[j].n[1];
 	  bvertex[2]=vertices[j].n[2];
 	  bfound=1;
 	}
-	if (!mfound && vertices[j].c[0]==xm && vertices[j].c[1]==ym && vertices[j].c[2]==zb){
+	if (!mfound && vertices[j].c[0]==(int)xm && vertices[j].c[1]==(int)ym && vertices[j].c[2]==(int)zb){
 	  mvertex[0]=vertices[j].n[0];
 	  mvertex[1]=vertices[j].n[1];
 	  mvertex[2]=vertices[j].n[2];
 	  mfound=1;
 	}
-	if (!tfound && vertices[j].c[0]==xt && vertices[j].c[1]==yt && vertices[j].c[2]==zt){
+	if (!tfound && vertices[j].c[0]==(int)xt && vertices[j].c[1]==(int)yt && vertices[j].c[2]==(int)zt){
 	  tvertex[0]=vertices[j].n[0];
 	  tvertex[1]=vertices[j].n[1];
 	  tvertex[2]=vertices[j].n[2];
@@ -166,7 +166,12 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
 	if (tfound && mfound && bfound)
 	  j=polygons->lastcol+1;
       }
-      
+      //If the vertex ain't there
+      if (!tfound && !mfound && !bfound){
+	printf("waaa\n");
+	exit(42);
+      }
+
       /* flat shading
       //Calculate diffuse and specular lighting for each point light source
       int l;
@@ -321,7 +326,7 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
 	bt_green=(top_color.green-bottom_color.green)/(yt-yb);
 	bt_blue=(top_color.blue-bottom_color.blue)/(yt-yb);
       }
-      color left_c,right_c;
+      double_color left_c,right_c;
       left_c.red=bottom_color.red;
       left_c.green=bottom_color.green;
       left_c.blue=bottom_color.blue;
@@ -1029,12 +1034,12 @@ void draw_line(int x0, int y0, double z0, int x1, int y1, double z1, screen s, z
   }
 }
 
-void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, screen s, zbuff zbuf, color left_c, color right_c) {
+void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, screen s, zbuff zbuf, double_color left_c, double_color right_c) {
  
   int x, y, d, dx, dy;
   double z,dz;
-  color tmpc;
-  int red,green,blue;
+  double_color tmpc;
+  double red,green,blue;
   red=0;
   green=0;
   blue=0;
@@ -1075,7 +1080,7 @@ void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, scr
       green = (right_c.green-left_c.green)/abs(x1-x);
       blue = (right_c.blue-left_c.blue)/abs(x1-x);
       while ( x <= x1 ) {
-	plot(s, zbuf, left_c, x, y, z);
+	double_plot(s, zbuf, left_c, x, y, z);
 
 	if ( d < 0 ) {
 	  x = x + 1;
@@ -1102,7 +1107,7 @@ void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, scr
       blue = (right_c.blue-left_c.blue)/abs(y1-y);
       while ( y <= y1 ) {
 
-	plot(s, zbuf, left_c, x, y, z);
+	double_plot(s, zbuf, left_c, x, y, z);
 	if ( d > 0 ) {
 	  y = y + 1;
 	  d = d - dx;
@@ -1132,7 +1137,7 @@ void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, scr
       green = (right_c.green-left_c.green)/abs(x1-x);
       blue = (right_c.blue-left_c.blue)/abs(x1-x);
       while ( x <= x1 ) {
-	plot(s, zbuf, left_c, x, y, z);
+	double_plot(s, zbuf, left_c, x, y, z);
 
 	if ( d > 0 ) {
 	  x = x + 1;
@@ -1160,7 +1165,7 @@ void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, scr
       blue = ((double)(right_c.blue-left_c.blue))/abs(y-y1);
       while ( y >= y1 ) {
 	
-	plot(s, zbuf, left_c, x, y, z);
+	double_plot(s, zbuf, left_c, x, y, z);
 	if ( d < 0 ) {
 	  y = y - 1;
 	  d = d + dx;
