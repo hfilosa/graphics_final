@@ -64,6 +64,11 @@ struct command
     } box;
     struct {
       SYMTAB *constants;
+      double d0[4],d1[5];
+      SYMTAB *cs;
+    } heart;
+    struct {
+      SYMTAB *constants;
       double p0[4],p1[4];
       SYMTAB *cs0,*cs1;
     } line;

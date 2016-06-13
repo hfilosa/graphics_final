@@ -12,6 +12,7 @@ void draw_line(int x0, int y0, double z0,
 void draw_gouraud_line(int x0, int y0, double z0,
 	       int x1, int y1, double z1,
 		       screen s, zbuff zbuf, double_color left_c, double_color right_c);
+void draw_phong_line(int x0, int y0, double z0, int x1, int y1, double z1, screen s, zbuff zbuf, double * l_vertex, double * r_vertex, struct constants k, struct light *lights, int num_lights);
 void add_point( struct matrix * points, 
 		 double x, double y, double z);
 void add_edge( struct matrix * points, 
@@ -37,6 +38,7 @@ void add_curve( struct matrix *points,
 void add_box( struct matrix *points,
 	      double x, double y, double z,
 	      double w, double h, double d);
+void add_heart( struct matrix * polygons, double x, double y, double z, double h1, double h2, double w, double d);
 void add_sphere( struct matrix * points, 
 		 double cx, double cy, double cz, double r, 
 		 int step );

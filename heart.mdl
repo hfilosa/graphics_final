@@ -10,19 +10,19 @@ move 0 0 100
 //left side
 push
 move -250 160 0
-box 0 0 0 160 160 200
+box 0 0 -2 160 160 198
 move 0 -160 0
 rotate z 45
-box 0 0 0 226.24 353.55 200
+box -2 0 0 226.24 353.55 200
 pop
 
 push
 //Right side
 move 90 160 0
 push
-box 0 0 0 160 160 200
+box 0 0 0 160 160 198
 rotate z -45
-box 0 0 0 226.24 353.55 200
+box 2 0 2 226.24 353.55 204
 pop
 
 

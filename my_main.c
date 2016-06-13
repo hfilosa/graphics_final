@@ -257,17 +257,17 @@ void my_main( int polygons ) {
 
   //Declare our default reflectivity values
   struct constants dcolor;
-  dcolor.r[Kambient]=0;
-  dcolor.g[Kambient]=0;
-  dcolor.b[Kambient]=0;
+  dcolor.r[Kambient]=0.4;
+  dcolor.g[Kambient]=0.4;
+  dcolor.b[Kambient]=0.4;
 
-  dcolor.r[Kdiffuse]=1;
-  dcolor.g[Kdiffuse]=0;
-  dcolor.b[Kdiffuse]=0;
+  dcolor.r[Kdiffuse]=0.4;
+  dcolor.g[Kdiffuse]=0.3;
+  dcolor.b[Kdiffuse]=0.3;
 
-  dcolor.r[Kspecular]=0;
-  dcolor.g[Kspecular]=0;
-  dcolor.b[Kspecular]=0;
+  dcolor.r[Kspecular]=0.4;
+  dcolor.g[Kspecular]=0.3;
+  dcolor.b[Kspecular]=0.3;
 
   //Lights array
   struct light lights[10];
@@ -280,15 +280,28 @@ void my_main( int polygons ) {
   lights[view_vector].l[y_vector]=0;
   lights[view_vector].l[z_vector]=1;
 
-  //Define a default point light source
-  lights[1].c[Lred]=300;
-  lights[1].c[Lgreen]=100;
-  lights[1].c[Lblue]=100;
-  // I choose these vectors randomly
+  //Define a default red point light source
+  lights[1].c[Lred]=450;
+  lights[1].c[Lgreen]=0;
+  lights[1].c[Lblue]=0;
   lights[1].l[x_vector]=0;
-  lights[1].l[y_vector]=-1;
+  lights[1].l[y_vector]=.5;
   lights[1].l[z_vector]=1;
-  int num_lights=1;
+  //Define a default green point light source
+  lights[2].c[Lred]=0;
+  lights[2].c[Lgreen]=250;
+  lights[2].c[Lblue]=0;
+  lights[2].l[x_vector]=-1;
+  lights[2].l[y_vector]=0;
+  lights[2].l[z_vector]=0;
+  //Define a default blue point light source
+  lights[3].c[Lred]=0;
+  lights[3].c[Lgreen]=0;
+  lights[3].c[Lblue]=250;
+  lights[3].l[x_vector]=1;
+  lights[3].l[y_vector]=0;
+  lights[3].l[z_vector]=0;
+  int num_lights=3;
 
   num_frames = 1;
   step = 5;
@@ -349,6 +362,18 @@ void my_main( int polygons ) {
 		 op[i].op.box.d1[0],
 		 op[i].op.box.d1[1],
 		 op[i].op.box.d1[2]);
+	matrix_mult( s->data[ s->top ], tmp );
+	draw_polygons( tmp, t, z, dcolor, lights, num_lights);
+	tmp->lastcol = 0;
+	break;
+
+      case HEART:
+	add_heart( tmp, op[i].op.box.d0[0],
+		 op[i].op.box.d0[1],
+		 op[i].op.box.d0[2],
+		 op[i].op.box.d1[0],
+		 op[i].op.box.d1[1],
+		   op[i].op.box.d1[2],op[i].op.box.d1[3]);
 	matrix_mult( s->data[ s->top ], tmp );
 	draw_polygons( tmp, t, z, dcolor, lights, num_lights);
 	tmp->lastcol = 0;

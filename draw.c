@@ -48,7 +48,7 @@ Inputs:   struct matrix *polygons
 Returns: 
 Goes through polygons 3 points at a time, drawing 
 lines connecting each points to create bounding
-triangles. Then fills in triangles using polygon shading model.
+triangles. Then fills in triangles using phong shading model.
 
 04/16/13 13:13:27
 jdyrlandweaver
@@ -56,36 +56,17 @@ jdyrlandweaver
 ====================*/
 void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct constants k, struct light *lights, int num_lights) {
   int i,j,b;
-  double_color c, ambient_color, bottom_color, middle_color, top_color;
   int magic_num;
   double xb,yb,zb, xt,yt,zt, xm,ym,zm;
   //The bottom to top x increment (bt), bottom to middle(bm), middle to top(mt)
   double bt_inc,bm_inc,mt_inc;
   //The increment along the z axis
   double bt_z,bm_z,mt_z;
-  //The normalized view vector. Only need to calculate once
-  double * normal_view=normalize_light(lights[view_vector]);
   //The index of the top,bottom, and middle vertex normals
   int vb,vm,vt;
   struct vertex *vertices=calculate_vertex_normals(polygons);
- //Calculate ambient lighting
-  ambient_color.red=k.r[Kambient]*lights[Kambient].c[Lred];
-  ambient_color.green=k.g[Kambient]*lights[Kambient].c[Lgreen];
-  ambient_color.blue=k.b[Kambient]*lights[Kambient].c[Lblue];
   for( i=0; i < polygons->lastcol-2; i+=3 ) {
     if ( calculate_dot( polygons, i ) < 0 ) {
-      c.red=0;
-      c.green=0;
-      c.blue=0;
-      bottom_color.red=0;
-      bottom_color.green=0;
-      bottom_color.blue=0;
-      middle_color.red=0;
-      middle_color.green=0;
-      middle_color.blue=0;
-      top_color.red=0;
-      top_color.green=0;
-      top_color.blue=0;
       //Figure out which points are the top,bottom and middle
       //Also figure out  top,bottom and middle vertex normals
       xt=polygons->m[0][i];
@@ -144,14 +125,202 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       int mfound=0;
       int tfound=0;
       for (j=0;j<polygons->lastcol;j++){
-	//	printf("Coords: %d %d %d vertex: %f %f %f index:%d\n",vertices[j].c[0],vertices[j].c[1],vertices[j].c[2],vertices[j].n[0],vertices[j].n[1],vertices[j].n[2],j);
 	if (!bfound && vertices[j].c[0]==(int)xb && vertices[j].c[1]==(int)yb && vertices[j].c[2]==(int)zb){
 	  bvertex[0]=vertices[j].n[0];
 	  bvertex[1]=vertices[j].n[1];
 	  bvertex[2]=vertices[j].n[2];
 	  bfound=1;
 	}
-	if (!mfound && vertices[j].c[0]==(int)xm && vertices[j].c[1]==(int)ym && vertices[j].c[2]==(int)zb){
+	if (!mfound && vertices[j].c[0]==(int)xm && vertices[j].c[1]==(int)ym && vertices[j].c[2]==(int)zm){
+	  mvertex[0]=vertices[j].n[0];
+	  mvertex[1]=vertices[j].n[1];
+	  mvertex[2]=vertices[j].n[2];
+	  mfound=1;
+	}
+	if (!tfound && vertices[j].c[0]==(int)xt && vertices[j].c[1]==(int)yt && vertices[j].c[2]==(int)zt){
+	  tvertex[0]=vertices[j].n[0];
+	  tvertex[1]=vertices[j].n[1];
+	  tvertex[2]=vertices[j].n[2];
+	  tfound=1;
+	}
+	if (tfound && mfound && bfound)
+	  j=polygons->lastcol+1;
+      }
+      //If the vertex ain't there
+      if (!tfound && !mfound && !bfound){
+	printf("Dropped Vertex\n");
+	exit(42);
+      }
+      double left_x=xb;
+      double right_x=xb;
+      double left_z=zb;
+      double right_z=zb;
+      int passed_middle=0;
+      //vertex interpolation
+      double bm_vert[3],mt_vert[3],bt_vert[3];
+      if (ym != yb){
+	for (j=0;j<3;j++)
+	  bm_vert[j]=(mvertex[j]-bvertex[j])/(ym-yb);
+      }
+      if (ym != yt){
+	for (j=0;j<3;j++)
+	  mt_vert[j]=(tvertex[j]-mvertex[j])/(yt-ym);
+      }
+      if (yt != yb){
+	for (j=0;j<3;j++)
+	  bt_vert[j]=(tvertex[j]-bvertex[j])/(yt-yb);
+      }
+
+      double left_vertex[3],right_vertex[3];
+      for (j=0;j<3;j++){
+	left_vertex[j]=bvertex[j];
+	right_vertex[j]=bvertex[j];
+      }
+      while (yb<yt){
+	if (!passed_middle && yb>=ym){
+	  right_x=xm;
+	  right_z=zm;
+	  passed_middle=1;
+	  for (j=0;j<3;j++)
+	    right_vertex[j]=mvertex[j];
+	}
+	draw_phong_line(left_x,yb,left_z, right_x,yb,right_z, s,zbuf, left_vertex, right_vertex, k, lights, num_lights);
+	left_x+=bt_inc;
+	left_z+=bt_z;
+	for (j=0;j<3;j++)
+	  left_vertex[j]+=bt_vert[j];
+	if (yb>=ym){
+	  right_x+=mt_inc;
+	  right_z+=mt_z;
+	  for (j=0;j<3;j++)
+	    right_vertex[j]+=mt_vert[j];
+	}
+	else{
+	  right_x+=bm_inc;
+	  right_z+=bm_z;
+	  for (j=0;j<3;j++)
+	    right_vertex[j]+=bm_vert[j];
+	}
+	yb+=1;
+      }
+    }
+  }
+}
+
+
+/*======== void draw_polygons_gouraud() ==========
+Inputs:   struct matrix *polygons
+          screen s
+          zbuff zbuf
+	  struct constants k
+	  struct lights *lights
+	  int num_lights
+Returns: 
+Goes through polygons 3 points at a time, drawing 
+lines connecting each points to create bounding
+triangles. Then fills in triangles using gouraud shading model.
+
+04/16/13 13:13:27
+jdyrlandweaver
+& Henry
+====================*/
+void draw_polygons_gouraud( struct matrix *polygons, screen s, zbuff zbuf, struct constants k, struct light *lights, int num_lights) {
+  int i,j,b;
+  double_color c, ambient_color, bottom_color, middle_color, top_color;
+  int magic_num;
+  double xb,yb,zb, xt,yt,zt, xm,ym,zm;
+  //The bottom to top x increment (bt), bottom to middle(bm), middle to top(mt)
+  double bt_inc,bm_inc,mt_inc;
+  //The increment along the z axis
+  double bt_z,bm_z,mt_z;
+  //The normalized view vector. Only need to calculate once
+  double * normal_view=normalize_light(lights[view_vector]);
+  //The index of the top,bottom, and middle vertex normals
+  int vb,vm,vt;
+  struct vertex *vertices=calculate_vertex_normals(polygons);
+ //Calculate ambient lighting
+  ambient_color.red=k.r[Kambient]*lights[Kambient].c[Lred];
+  ambient_color.green=k.g[Kambient]*lights[Kambient].c[Lgreen];
+  ambient_color.blue=k.b[Kambient]*lights[Kambient].c[Lblue];
+  for( i=0; i < polygons->lastcol-2; i+=3 ) {
+    if ( calculate_dot( polygons, i ) < 0 ) {
+      c.red=0;
+      c.green=0;
+      c.blue=0;
+      bottom_color.red=0;
+      bottom_color.green=0;
+      bottom_color.blue=0;
+      middle_color.red=0;
+      middle_color.green=0;
+      middle_color.blue=0;
+      top_color.red=0;
+      top_color.green=0;
+      top_color.blue=0;
+      //Figure out which points are the top,bottom and middle
+      //Also figure out  top,bottom and middle vertex normals
+      xt=polygons->m[0][i];
+      yt=polygons->m[1][i];
+      zt=polygons->m[2][i];
+      vt=i;
+      xb=polygons->m[0][i];
+      yb=polygons->m[1][i];
+      zb=polygons->m[2][i];
+      vb=i;
+      b=0;
+      magic_num=0;
+      for (j=1;j<3;j++){
+	if (polygons->m[1][i+j] > yt){
+	  xt=polygons->m[0][i+j];
+	  yt=polygons->m[1][i+j];
+	  zt=polygons->m[2][i+j];
+	  vt=i+j;
+	  b=j;
+	}
+      }
+      magic_num+=b;
+      b=0;
+      for (j=1;j<3;j++){
+	if (polygons->m[1][i+j] < yb){
+	  xb=polygons->m[0][i+j];
+	  yb=polygons->m[1][i+j];
+	  zb=polygons->m[2][i+j];
+	  vb=i+j;
+	  b=j;
+	}
+      }
+      magic_num+=b;
+      magic_num=3-magic_num;
+      xm=polygons->m[0][i+magic_num];
+      ym=polygons->m[1][i+magic_num];
+      zm=polygons->m[2][i+magic_num];
+      vm=i+magic_num;
+    
+      //Increments for x
+      bt_inc=(xt-xb)/(yt-yb);
+      mt_inc=(xt-xm)/(yt-ym);
+      bm_inc=(xm-xb)/(ym-yb);
+
+      //Increments for z
+      bt_z=(zt-zb)/(yt-yb);
+      mt_z=(zt-zm)/(yt-ym);
+      bm_z=(zm-zb)/(ym-yb);
+      
+      //Find the indices of the bottom,top, and middle vertices in the vertices matrix 
+      double bvertex[3];
+      double mvertex[3];
+      double tvertex[3];
+      //Use ints to speed search through boolean short circuiting
+      int bfound=0;
+      int mfound=0;
+      int tfound=0;
+      for (j=0;j<polygons->lastcol;j++){
+	if (!bfound && vertices[j].c[0]==(int)xb && vertices[j].c[1]==(int)yb && vertices[j].c[2]==(int)zb){
+	  bvertex[0]=vertices[j].n[0];
+	  bvertex[1]=vertices[j].n[1];
+	  bvertex[2]=vertices[j].n[2];
+	  bfound=1;
+	}
+	if (!mfound && vertices[j].c[0]==(int)xm && vertices[j].c[1]==(int)ym && vertices[j].c[2]==(int)zm){
 	  mvertex[0]=vertices[j].n[0];
 	  mvertex[1]=vertices[j].n[1];
 	  mvertex[2]=vertices[j].n[2];
@@ -171,38 +340,6 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
 	printf("waaa\n");
 	exit(42);
       }
-
-      /* flat shading
-      //Calculate diffuse and specular lighting for each point light source
-      int l;
-      //The normalized surface normal
-      double * surface_normal=calculate_surface_normal(polygons,i);
-      //The normalized light
-      double * normal_light;
-      double theta;
-      double tmp;
-      for (l=num_lights;l>0;l--){
-	normal_light=normalize_light(lights[l]);
-	theta=diffuse_multiplier(surface_normal,normal_light);
-	//Calculate diffuse reflection. Use ternary operator to save lines
-	tmp=k.r[Kdiffuse]*lights[l].c[Lred]*theta;
-	tmp>0 ? c.red+=tmp : 0;
-	tmp=k.g[Kdiffuse]*lights[l].c[Lgreen]*theta;
-	tmp>0 ? c.green+=tmp : 0;
-	tmp=k.b[Kdiffuse]*lights[l].c[Lblue]*theta;
-	tmp>0 ? c.blue+=tmp : 0;
-	//Calculate specular reflection.
-	theta=specular_multiplier(surface_normal,normal_light,normal_view);
-	tmp=k.r[Kspecular]*lights[l].c[Lred]*theta;
-	tmp>0 ? c.red+=tmp : 0;
-	tmp=k.g[Kspecular]*lights[l].c[Lgreen]*theta;
-	tmp>0 ? c.green+=tmp : 0;
-	tmp=k.b[Kspecular]*lights[l].c[Lblue]*theta;
-	tmp>0 ? c.blue+=tmp : 0;
-	free(normal_light);
-      }
-      free(surface_normal);
-      */
 
       //Calculate diffuse and specular lighting for bottom vertex for each light source
       int l;
@@ -298,12 +435,6 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       top_color.green>255 ? top_color.green=255 : 0;
       top_color.blue>255 ? top_color.blue=255 : 0;
 
-      /* For annoying testing
-      printf("starting to fill in polyon\nYB:%f YM:%f YT:%f\n",yb,ym,yt);
-      printf("c.green:%d c.red:%d c.blue:%d\n",c.green,c.red,c.blue);
-      printf("XB:%f XM:%f XT:%f\n",xb,xm,xt);
-      printf("bt_inc:%f bm_inc:%f mt_inc:%f\n\n",bt_inc,bm_inc,mt_inc);
-      */
       double left_x=xb;
       double right_x=xb;
       double left_z=zb;
@@ -317,15 +448,16 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
 	bm_blue=(middle_color.blue-bottom_color.blue)/(ym-yb);
       }
       if (ym != yt){
-	mt_red=(middle_color.red-bottom_color.red)/(yt-ym);
-	mt_green=(middle_color.green-bottom_color.green)/(yt-ym);
-	mt_blue=(middle_color.blue-bottom_color.blue)/(yt-ym);
+	mt_red=(top_color.red-middle_color.red)/(yt-ym);
+	mt_green=(top_color.green-middle_color.green)/(yt-ym);
+	mt_blue=(top_color.blue-middle_color.blue)/(yt-ym);
       }
       if (yt != yb){
 	bt_red=(top_color.red-bottom_color.red)/(yt-yb);
 	bt_green=(top_color.green-bottom_color.green)/(yt-yb);
 	bt_blue=(top_color.blue-bottom_color.blue)/(yt-yb);
       }
+
       double_color left_c,right_c;
       left_c.red=bottom_color.red;
       left_c.green=bottom_color.green;
@@ -333,9 +465,7 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
       right_c.red=bottom_color.red;
       right_c.green=bottom_color.green;
       right_c.blue=bottom_color.blue;
-      //printf("Bottom color %d %d %d\n",bottom_color.red,bottom_color.green,bottom_color.blue);
-      //printf("Middle color %d %d %d\n",middle_color.red,middle_color.green,middle_color.blue);
-      //printf("top color %d %d %d\n",top_color.red,top_color.green,top_color.blue);
+      
       while (yb<yt){
 	if (!passed_middle && yb>=ym){
 	  right_x=xm;
@@ -367,6 +497,164 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
 	}
 	yb+=1;
       }
+    }
+  }
+  free(normal_view);
+}
+
+/*======== void draw_polygons() ==========
+Inputs:   struct matrix *polygons
+          screen s
+          zbuff zbuf
+	  struct constants k
+	  struct lights *lights
+	  int num_lights
+Returns: 
+Goes through polygons 3 points at a time, drawing 
+lines connecting each points to create bounding
+triangles. Then fills in triangles using flat shading model.
+
+04/16/13 13:13:27
+jdyrlandweaver
+& Henry
+====================*/
+void draw_polygons_flat( struct matrix *polygons, screen s, zbuff zbuf, struct constants k, struct light *lights, int num_lights) {
+  int i,j,b;
+  color c, ambient_color;
+  int magic_num;
+  double xb,yb,zb, xt,yt,zt, xm,ym,zm;
+  //The bottom to top x increment (bt), bottom to middle(bm), middle to top(mt)
+  double bt_inc,bm_inc,mt_inc;
+  //The increment along the z axis
+  double bt_z,bm_z,mt_z;
+  //The normalized view vector. Only need to calculate once
+  double * normal_view=normalize_light(lights[view_vector]);
+  //The index of the top,bottom, and middle vertex normals
+  int vb,vm,vt;
+ //Calculate ambient lighting
+  ambient_color.red=k.r[Kambient]*lights[Kambient].c[Lred];
+  ambient_color.green=k.g[Kambient]*lights[Kambient].c[Lgreen];
+  ambient_color.blue=k.b[Kambient]*lights[Kambient].c[Lblue];
+  for( i=0; i < polygons->lastcol-2; i+=3 ) {
+    if ( calculate_dot( polygons, i ) < 0 ) {
+  
+      //Figure out which points are the top,bottom and middle
+      //Also figure out  top,bottom and middle vertex normals
+      xt=polygons->m[0][i];
+      yt=polygons->m[1][i];
+      zt=polygons->m[2][i];
+      vt=i;
+      xb=polygons->m[0][i];
+      yb=polygons->m[1][i];
+      zb=polygons->m[2][i];
+      vb=i;
+      b=0;
+      magic_num=0;
+      for (j=1;j<3;j++){
+	if (polygons->m[1][i+j] > yt){
+	  xt=polygons->m[0][i+j];
+	  yt=polygons->m[1][i+j];
+	  zt=polygons->m[2][i+j];
+	  vt=i+j;
+	  b=j;
+	}
+      }
+      magic_num+=b;
+      b=0;
+      for (j=1;j<3;j++){
+	if (polygons->m[1][i+j] < yb){
+	  xb=polygons->m[0][i+j];
+	  yb=polygons->m[1][i+j];
+	  zb=polygons->m[2][i+j];
+	  vb=i+j;
+	  b=j;
+	}
+      }
+      magic_num+=b;
+      magic_num=3-magic_num;
+      xm=polygons->m[0][i+magic_num];
+      ym=polygons->m[1][i+magic_num];
+      zm=polygons->m[2][i+magic_num];
+      vm=i+magic_num;
+    
+      //Increments for x
+      bt_inc=(xt-xb)/(yt-yb);
+      mt_inc=(xt-xm)/(yt-ym);
+      bm_inc=(xm-xb)/(ym-yb);
+
+      //Increments for z
+      bt_z=(zt-zb)/(yt-yb);
+      mt_z=(zt-zm)/(yt-ym);
+      bm_z=(zm-zb)/(ym-yb);
+      
+      //Calculate diffuse and specular lighting for each point light source
+      int l;
+      //The normalized surface normal
+      double * surface_normal=calculate_surface_normal(polygons,i);
+      //The normalized light
+      double * normal_light;
+      double theta;
+      double tmp;
+      for (l=num_lights;l>0;l--){
+	normal_light=normalize_light(lights[l]);
+	theta=diffuse_multiplier(surface_normal,normal_light);
+	//Calculate diffuse reflection. Use ternary operator to save lines
+	tmp=k.r[Kdiffuse]*lights[l].c[Lred]*theta;
+	tmp>0 ? c.red+=tmp : 0;
+	tmp=k.g[Kdiffuse]*lights[l].c[Lgreen]*theta;
+	tmp>0 ? c.green+=tmp : 0;
+	tmp=k.b[Kdiffuse]*lights[l].c[Lblue]*theta;
+	tmp>0 ? c.blue+=tmp : 0;
+	//Calculate specular reflection.
+	theta=specular_multiplier(surface_normal,normal_light,normal_view);
+	tmp=k.r[Kspecular]*lights[l].c[Lred]*theta;
+	tmp>0 ? c.red+=tmp : 0;
+	tmp=k.g[Kspecular]*lights[l].c[Lgreen]*theta;
+	tmp>0 ? c.green+=tmp : 0;
+	tmp=k.b[Kspecular]*lights[l].c[Lblue]*theta;
+	tmp>0 ? c.blue+=tmp : 0;
+	free(normal_light);
+      }
+      free(surface_normal);    
+
+      c.red+=ambient_color.red;
+      c.green+=ambient_color.green;
+      c.blue+=ambient_color.blue;
+      //Cap color at 255 if it is above that
+      c.red>255 ? c.red=255 : 0;
+      c.green>255 ? c.green=255 : 0;
+      c.blue>255 ? c.blue=255 : 0;
+
+      /* For annoying testing
+      printf("starting to fill in polyon\nYB:%f YM:%f YT:%f\n",yb,ym,yt);
+      printf("c.green:%d c.red:%d c.blue:%d\n",c.green,c.red,c.blue);
+      printf("XB:%f XM:%f XT:%f\n",xb,xm,xt);
+      printf("bt_inc:%f bm_inc:%f mt_inc:%f\n\n",bt_inc,bm_inc,mt_inc);
+      */
+      double left_x=xb;
+      double right_x=xb;
+      double left_z=zb;
+      double right_z=zb;
+      int passed_middle=0;
+      while (yb<yt){
+	if (!passed_middle && yb>=ym){
+	  right_x=xm;
+	  right_z=zm;
+	  passed_middle=1;
+	}
+	draw_line(left_x,yb,left_z, right_x,yb,right_z, s,zbuf,c);
+	left_x+=bt_inc;
+	left_z+=bt_z;
+	if (yb>=ym){
+	  right_x+=mt_inc;
+	  right_z+=mt_z;
+	}
+	else{
+	  right_x+=bm_inc;
+	  right_z+=bm_z;
+	}
+	yb+=1;
+      }
       /*draw_line( polygons->m[0][i],
 		 polygons->m[1][i],
 		 polygons->m[2][i],
@@ -393,7 +681,6 @@ void draw_polygons( struct matrix *polygons, screen s, zbuff zbuf, struct consta
   }
   free(normal_view);
 }
-
 
 /*======== void add_sphere() ==========
   Inputs:   struct matrix * points
@@ -731,6 +1018,91 @@ void add_box( struct matrix * polygons,
 	       x, y2, z, 
 	       x, y, z,
 	       x, y, z2); 
+}
+
+/*======== void add_heart() ==========
+  Inputs:   struct matrix * points
+            double x
+	    double y
+	    double z
+	    double h1
+	    double h2
+	    double w
+	    double d
+  Returns: 
+  __  __
+  | \/ |
+   \  /
+    \/
+  add the points for a rectagular prism whose 
+  center of the cleavage is (x, y, z) with the following dimensions: 
+  h1=Height of lobes
+  h2=Height of bottom lobe
+  w=width of tope lobe
+
+  henry_filosa
+  ====================*/
+void add_heart( struct matrix * polygons, double x, double y, double z, double h1, double h2, double w, double d) {
+
+  double z2=z-d;
+  double y0=y+h1;
+  double y1=y;
+  double y2=y-h2;
+  double x0=x-h1-w;
+  double x1=x-h1;
+  double x2=x+h1;
+  double x3=x+h1+w;
+  //right lobe, front
+  add_polygon(polygons,x,y,z, x2,y,z, x2,y0,z);
+  add_polygon(polygons,x2,y,z, x3,y0,z, x2,y0,z);
+  add_polygon(polygons,x2,y,z, x3,y,z, x3,y0,z);
+  //left lobe, front
+  add_polygon(polygons,x,y,z, x1,y0,z, x1,y,z);
+  add_polygon(polygons,x1,y,z, x1,y0,z, x0,y0,z);
+  add_polygon(polygons,x1,y,z, x0,y0,z, x0,y,z);
+  //right lobe, front, large
+  add_polygon(polygons,x,y,z, x,y2,z, x3,y,z);
+  //left lobe, front, large
+  add_polygon(polygons,x,y,z, x0,y,z, x,y2,z);
+
+  //right lobe, back, large
+  add_polygon(polygons,x,y,z2, x3,y,z2, x,y2,z2);
+  //left lobe, back, large
+  add_polygon(polygons,x,y,z2, x,y2,z2, x0,y,z2);
+
+  //right lobe, back
+  add_polygon(polygons,x,y,z2, x+h1,y+h1,z2, x+h1,y,z2);
+  add_polygon(polygons,x+h1,y,z2, x+h1+w,y+h1,z2, x+h1+w,y,z2);
+  add_polygon(polygons,x+h1,y,z2, x+h1,y+h1,z2, x+h1+w,y+h1,z2);
+ //left lobe, back
+  add_polygon(polygons,x,y,z2, x-h1,y,z2, x-h1,y+h1,z2);
+  add_polygon(polygons,x-h1,y,z2, x-h1-w,y+h1,z2, x-h1,y+h1,z2);
+  add_polygon(polygons,x-h1,y,z2, x-h1-w,y,z2, x-h1-w,y+h1,z2);
+
+  //Cleavage connection
+  add_polygon(polygons,x,y,z, x2,y0,z, x2,y0,z2);
+  add_polygon(polygons,x,y,z, x2,y0,z2, x,y,z2);
+  add_polygon(polygons,x,y,z, x,y,z2, x1,y0,z2);
+  add_polygon(polygons,x,y,z, x1,y0,z2, x1,y0,z);
+  
+  //Right side
+  add_polygon(polygons,x3,y,z, x3,y,z2, x3,y0,z2);
+  add_polygon(polygons,x3,y,z, x3,y0,z2, x3,y0,z);
+  add_polygon(polygons,x3,y,z, x,y2,z, x,y2,z2);
+  add_polygon(polygons,x3,y,z, x,y2,z2, x3,y,z2);
+  //Left side
+  add_polygon(polygons,x0,y,z, x0,y0,z, x0,y0,z2);
+  add_polygon(polygons,x0,y,z, x0,y0,z2, x0,y,z2);
+  add_polygon(polygons,x0,y,z, x0,y,z2, x,y2,z2);
+  add_polygon(polygons,x0,y,z, x,y2,z2, x,y2,z);
+  
+  //Left top
+  add_polygon(polygons,x1,y0,z, x1,y0,z2, x0,y0,z2);
+  add_polygon(polygons,x1,y0,z, x0,y0,z2, x0,y0,z);
+  //Right top
+  add_polygon(polygons,x2,y0,z, x3,y0,z2, x2,y0,z2);
+  add_polygon(polygons,x2,y0,z, x3,y0,z, x3,y0,z2);
+
 }
   
 /*======== void add_circle() ==========
@@ -1070,15 +1442,23 @@ void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, scr
   dx = (x1 - x) * 2;
   dy = (y1 - y) * 2;
 
+  //Find difference
+  int dif;
+  if (dx > abs(dy))
+    dif=abs(x1 - x);
+  else
+    dif=abs(y1 - y);
+
+  red=(right_c.red-left_c.red)/dif;
+  green= (right_c.green-left_c.green)/dif;
+  blue = (right_c.blue-left_c.blue)/dif;
+
   //positive slope: Octants 1, 2 (5 and 6)
   if ( dy > 0 ) {
     //slope < 1: Octant 1 (5)
     if ( dx > dy ) {
       d = dy - ( dx / 2 );
       dz = (z1-z)/abs(x1 - x);
-      red = (right_c.red-left_c.red)/abs(x1-x);
-      green = (right_c.green-left_c.green)/abs(x1-x);
-      blue = (right_c.blue-left_c.blue)/abs(x1-x);
       while ( x <= x1 ) {
 	double_plot(s, zbuf, left_c, x, y, z);
 
@@ -1102,9 +1482,6 @@ void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, scr
     else {
       d = ( dy / 2 ) - dx;
       dz = (z1-z)/abs(y1-y);
-      red = (right_c.red-left_c.red)/abs(y1-y);
-      green = (right_c.green-left_c.green)/abs(y1-y);
-      blue = (right_c.blue-left_c.blue)/abs(y1-y);
       while ( y <= y1 ) {
 
 	double_plot(s, zbuf, left_c, x, y, z);
@@ -1130,12 +1507,8 @@ void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, scr
   else { 
     //slope > -1: Octant 8 (4)
     if ( dx > abs(dy) ) {
-
       d = dy + ( dx / 2 );
       dz = (z1-z)/abs(x1 - x);
-      red = (right_c.red-left_c.red)/abs(x1-x);
-      green = (right_c.green-left_c.green)/abs(x1-x);
-      blue = (right_c.blue-left_c.blue)/abs(x1-x);
       while ( x <= x1 ) {
 	double_plot(s, zbuf, left_c, x, y, z);
 
@@ -1160,9 +1533,6 @@ void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, scr
     else {
       d =  (dy / 2) + dx;
       dz = (z1-z)/abs(y-y1);
-      red = ((double)(right_c.red-left_c.red))/abs(y-y1);
-      green = ((double)(right_c.green-left_c.green))/abs(y-y1);
-      blue = ((double)(right_c.blue-left_c.blue))/abs(y-y1);
       while ( y >= y1 ) {
 	
 	double_plot(s, zbuf, left_c, x, y, z);
@@ -1185,3 +1555,294 @@ void draw_gouraud_line(int x0, int y0, double z0, int x1, int y1, double z1, scr
   }
 }
 
+void draw_phong_line(int x0, int y0, double z0, int x1, int y1, double z1, screen s, zbuff zbuf, double * left_vertex, double * right_vertex, struct constants k, struct light *lights, int num_lights) {
+  double tmp,theta,magnitude;
+  double * normal_view,*normal_light;
+  normal_view=normalize_light(lights[view_vector]);
+  double_color ambient_color,c;
+  ambient_color.red=k.r[Kambient]*lights[Kambient].c[Lred];
+  ambient_color.green=k.g[Kambient]*lights[Kambient].c[Lgreen];
+  ambient_color.blue=k.b[Kambient]*lights[Kambient].c[Lblue];
+
+  int x, y, d, dx, dy;
+  double z,dz;
+
+  x = x0;
+  y = y0;
+  z = z0;
+
+  double l_vertex[3];
+  double r_vertex[3];
+
+  int i;
+  double tmp_vert[3];
+  //swap points so we're always drawing left to right
+  if ( x0 > x1 ) {
+    x = x1;
+    y = y1;
+    z = z1;
+    x1 = x0;
+    y1 = y0;
+    z1 = z0;
+    for (i=0;i<3;i++){
+      l_vertex[i]=right_vertex[i];
+      r_vertex[i]=left_vertex[i];
+    }
+  }
+  else{
+    for (i=0;i<3;i++){
+      l_vertex[i]=left_vertex[i];
+      r_vertex[i]=right_vertex[i];
+    }
+  }
+
+  //need to know dx and dy for this version
+  dx = (x1 - x) * 2;
+  dy = (y1 - y) * 2;
+
+  //Find difference
+  int dif,l;
+  if (dx > abs(dy))
+    dif=abs(x1 - x);
+  else
+    dif=abs(y1 - y);
+
+  dz=(z1-z)/dif;
+
+  double vert_delta[3];
+  for (i=0;i<3;i++)
+    vert_delta[i]=(r_vertex[i]-l_vertex[i])/dif;
+
+  //positive slope: Octants 1, 2 (5 and 6)
+  if ( dy > 0 ) {
+
+    //slope < 1: Octant 1 (5)
+    if ( dx > dy ) {
+      d = dy - ( dx / 2 );
+      while ( x <= x1 ) {
+
+	//Add in ambient lighting. Also serves to reset color
+	c.red=ambient_color.red;
+	c.green=ambient_color.green;
+	c.blue=ambient_color.blue;
+
+	//Calculate the lighting with the vertex
+	for (l=num_lights;l>0;l--){
+	  normal_light=normalize_light(lights[l]);
+	  theta=diffuse_multiplier(l_vertex,normal_light);
+	  //Calculate diffuse reflection. Use ternary operator to save lines
+	  tmp=k.r[Kdiffuse]*lights[l].c[Lred]*theta;
+	  tmp>0 ? c.red+=tmp : 0;
+	  tmp=k.g[Kdiffuse]*lights[l].c[Lgreen]*theta;
+	  tmp>0 ? c.green+=tmp : 0;
+	  tmp=k.b[Kdiffuse]*lights[l].c[Lblue]*theta;
+	  tmp>0 ? c.blue+=tmp : 0;
+	  //Calculate specular reflection.
+	  theta=specular_multiplier(l_vertex,normal_light,normal_view);
+	  tmp=k.r[Kspecular]*lights[l].c[Lred]*theta;
+	  tmp>0 ? c.red+=tmp : 0;
+	  tmp=k.g[Kspecular]*lights[l].c[Lgreen]*theta;
+	  tmp>0 ? c.green+=tmp : 0;
+	  tmp=k.b[Kspecular]*lights[l].c[Lblue]*theta;
+	  tmp>0 ? c.blue+=tmp : 0;
+	  free(normal_light);
+	}
+	//Cap color at 255 if it is above that
+	c.red>255 ? c.red=255 : 0;
+	c.green>255 ? c.green=255 : 0;
+	c.blue>255 ? c.blue=255 : 0;
+
+	double_plot(s, zbuf, c, x, y, z);
+
+	if ( d < 0 ) {
+	  x = x + 1;
+	  d = d + dy;
+	  z+=dz;
+	}
+	else {
+	  x = x + 1;
+	  y = y + 1;
+	  d = d + dy - dx;
+	  z+=dz;
+	}
+	l_vertex[0]+=vert_delta[0];
+	l_vertex[1]+=vert_delta[1];
+	l_vertex[1]+=vert_delta[2];
+      }
+    }
+
+    //slope > 1: Octant 2 (6)
+    else {
+      d = ( dy / 2 ) - dx;
+      while ( y <= y1 ) {
+	
+	//Add in ambient lighting. Also serves to reset color
+	c.red=ambient_color.red;
+	c.green=ambient_color.green;
+	c.blue=ambient_color.blue;
+
+	//Calculate the lighting with the vertex
+	for (l=num_lights;l>0;l--){
+	  normal_light=normalize_light(lights[l]);
+	  theta=diffuse_multiplier(l_vertex,normal_light);
+	  //Calculate diffuse reflection. Use ternary operator to save lines
+	  tmp=k.r[Kdiffuse]*lights[l].c[Lred]*theta;
+	  tmp>0 ? c.red+=tmp : 0;
+	  tmp=k.g[Kdiffuse]*lights[l].c[Lgreen]*theta;
+	  tmp>0 ? c.green+=tmp : 0;
+	  tmp=k.b[Kdiffuse]*lights[l].c[Lblue]*theta;
+	  tmp>0 ? c.blue+=tmp : 0;
+	  //Calculate specular reflection.
+	  theta=specular_multiplier(l_vertex,normal_light,normal_view);
+	  tmp=k.r[Kspecular]*lights[l].c[Lred]*theta;
+	  tmp>0 ? c.red+=tmp : 0;
+	  tmp=k.g[Kspecular]*lights[l].c[Lgreen]*theta;
+	  tmp>0 ? c.green+=tmp : 0;
+	  tmp=k.b[Kspecular]*lights[l].c[Lblue]*theta;
+	  tmp>0 ? c.blue+=tmp : 0;
+	  free(normal_light);
+	}
+	//Cap color at 255 if it is above that
+	c.red>255 ? c.red=255 : 0;
+	c.green>255 ? c.green=255 : 0;
+	c.blue>255 ? c.blue=255 : 0;
+	
+	double_plot(s, zbuf, c, x, y, z);
+	if ( d > 0 ) {
+	  y = y + 1;
+	  d = d - dx;
+	  z+=dz;
+	}
+	else {
+	  y = y + 1;
+	  x = x + 1;
+	  d = d + dy - dx;
+	  z+=dz;
+	}
+	l_vertex[0]+=vert_delta[0];
+	l_vertex[1]+=vert_delta[1];
+	l_vertex[1]+=vert_delta[2];
+      }
+    }
+  }
+
+  //negative slope: Octants 7, 8 (3 and 4)
+  else { 
+
+    //slope > -1: Octant 8 (4)
+    if ( dx > abs(dy) ) {
+      d = dy + ( dx / 2 );
+      while ( x <= x1 ) {
+	
+	//Add in ambient lighting. Also serves to reset color
+	c.red=ambient_color.red;
+	c.green=ambient_color.green;
+	c.blue=ambient_color.blue;
+
+	magnitude=sqrt(pow(l_vertex[0],2)+pow(l_vertex[1],2)+pow(l_vertex[2],2));
+	for (i=0;i<3;i++)
+	  tmp_vert[i]=l_vertex[i]/magnitude;
+
+	//Calculate the lighting with the vertex
+	for (l=num_lights;l>0;l--){
+	  normal_light=normalize_light(lights[l]);
+	  theta=diffuse_multiplier(tmp_vert,normal_light);
+	  //Calculate diffuse reflection. Use ternary operator to save lines
+	  tmp=k.r[Kdiffuse]*lights[l].c[Lred]*theta;
+	  tmp>0 ? c.red+=tmp : 0;
+	  tmp=k.g[Kdiffuse]*lights[l].c[Lgreen]*theta;
+	  tmp>0 ? c.green+=tmp : 0;
+	  tmp=k.b[Kdiffuse]*lights[l].c[Lblue]*theta;
+	  tmp>0 ? c.blue+=tmp : 0;
+	  //Calculate specular reflection.
+	  theta=specular_multiplier(tmp_vert,normal_light,normal_view);
+	  tmp=k.r[Kspecular]*lights[l].c[Lred]*theta;
+	  tmp>0 ? c.red+=tmp : 0;
+	  tmp=k.g[Kspecular]*lights[l].c[Lgreen]*theta;
+	  tmp>0 ? c.green+=tmp : 0;
+	  tmp=k.b[Kspecular]*lights[l].c[Lblue]*theta;
+	  tmp>0 ? c.blue+=tmp : 0;
+	  free(normal_light);
+	}
+	//Cap color at 255 if it is above that
+	c.red>255 ? c.red=255 : 0;
+	c.green>255 ? c.green=255 : 0;
+	c.blue>255 ? c.blue=255 : 0;
+	
+	double_plot(s, zbuf, c, x, y, z);
+
+	if ( d > 0 ) {
+	  x = x + 1;
+	  d = d + dy;
+	  z+=dz;
+	}
+	else {
+	  x = x + 1;
+	  y = y - 1;
+	  d = d + dy + dx;
+	  z+=dz;
+	}
+	for (i=0;i<3;i++)
+	  l_vertex[i]+=vert_delta[i];
+      }
+    }
+
+    //slope < -1: Octant 7 (3)
+    else {
+      d =  (dy / 2) + dx;
+      while ( y >= y1 ) {
+		
+	//Add in ambient lighting. Also serves to reset color
+	c.red=ambient_color.red;
+	c.green=ambient_color.green;
+	c.blue=ambient_color.blue;
+
+	magnitude=sqrt(pow(l_vertex[0],2)+pow(l_vertex[1],2)+pow(l_vertex[2],2));
+	for (i=0;i<3;i++)
+	  tmp_vert[i]=l_vertex[i]/magnitude;
+
+	//Calculate the lighting with the vertex
+	for (l=num_lights;l>0;l--){
+	  normal_light=normalize_light(lights[l]);
+	  theta=diffuse_multiplier(tmp_vert,normal_light);
+	  //Calculate diffuse reflection. Use ternary operator to save lines
+	  tmp=k.r[Kdiffuse]*lights[l].c[Lred]*theta;
+	  tmp>0 ? c.red+=tmp : 0;
+	  tmp=k.g[Kdiffuse]*lights[l].c[Lgreen]*theta;
+	  tmp>0 ? c.green+=tmp : 0;
+	  tmp=k.b[Kdiffuse]*lights[l].c[Lblue]*theta;
+	  tmp>0 ? c.blue+=tmp : 0;
+	  //Calculate specular reflection.
+	  theta=specular_multiplier(tmp_vert,normal_light,normal_view);
+	  tmp=k.r[Kspecular]*lights[l].c[Lred]*theta;
+	  tmp>0 ? c.red+=tmp : 0;
+	  tmp=k.g[Kspecular]*lights[l].c[Lgreen]*theta;
+	  tmp>0 ? c.green+=tmp : 0;
+	  tmp=k.b[Kspecular]*lights[l].c[Lblue]*theta;
+	  tmp>0 ? c.blue+=tmp : 0;
+	  free(normal_light);
+	}
+	//Cap color at 255 if it is above that
+	c.red>255 ? c.red=255 : 0;
+	c.green>255 ? c.green=255 : 0;
+	c.blue>255 ? c.blue=255 : 0;
+	
+	double_plot(s, zbuf, c, x, y, z);
+	if ( d < 0 ) {
+	  y = y - 1;
+	  d = d + dx;
+	  z+=dz;
+	}
+	else {
+	  y = y - 1;
+	  x = x + 1;
+	  d = d + dy + dx;
+	  z+=dz;
+	}
+	for (i=0;i<3;i++)
+	  l_vertex[i]+=vert_delta[i];
+      }
+    }
+  }
+  free(normal_view);
+}

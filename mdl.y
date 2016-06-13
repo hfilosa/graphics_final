@@ -31,7 +31,7 @@
 %token <val> DOUBLE
 %token <string> LIGHT AMBIENT
 %token <string> CONSTANTS SAVE_COORDS CAMERA 
-%token <string> SPHERE TORUS BOX LINE CS MESH TEXTURE
+%token <string> SPHERE TORUS BOX LINE CS MESH TEXTURE HEART
 %token <string> STRING
 %token <string> SET MOVE SCALE ROTATE BASENAME SAVE_KNOBS TWEEN FRAMES VARY 
 %token <string> PUSH POP SAVE GENERATE_RAYFILES
@@ -383,7 +383,25 @@ BOX STRING DOUBLE DOUBLE DOUBLE DOUBLE DOUBLE DOUBLE STRING
 
   lastop++;
 }|
+HEART DOUBLE DOUBLE DOUBLE DOUBLE DOUBLE DOUBLE DOUBLE
+{
+  lineno++;
+  op[lastop].opcode = HEART;
+  op[lastop].op.heart.d0[0] = $2;
+  op[lastop].op.heart.d0[1] = $3;
+  op[lastop].op.heart.d0[2] = $4;
+  op[lastop].op.heart.d0[3] = 0;
+  op[lastop].op.heart.d1[0] = $5;
+  op[lastop].op.heart.d1[1] = $6;
+  op[lastop].op.heart.d1[2] = $7;
+  op[lastop].op.heart.d1[3] = $8;
+  op[lastop].op.heart.d1[4] = 0;
 
+  op[lastop].op.heart.constants = NULL;
+  m = (struct matrix *)new_matrix(4,4);
+  op[lastop].op.heart.cs = NULL;
+  lastop++;
+}|
 
 LINE DOUBLE DOUBLE DOUBLE DOUBLE DOUBLE DOUBLE
 {

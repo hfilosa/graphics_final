@@ -113,6 +113,40 @@ double * calculate_surface_normal( struct matrix *points, int i ) {
   return normal;
 }
 
+
+/*======== double calculate_surface_non_normalized() ==========
+  Inputs:   struct matrix *points
+            int i  
+  Returns: double *
+     The surface normal of the polygon
+  
+  Calculates the surface normal of triangle points[i], points[i+1], points[i+2].
+  Returns a non-normalized vector
+
+  05/31/16 20:38:34
+  Henry
+  ====================*/
+double * calculate_surface_non_normalized( struct matrix *points, int i ) {
+
+  double ax, ay, az, bx, by, bz;
+  double *normal;
+  double vx, vy, vz;
+  double dot;
+
+  //calculate A and B vectors
+  ax = points->m[0][i+1] - points->m[0][i];
+  ay = points->m[1][i+1] - points->m[1][i];
+  az = points->m[2][i+1] - points->m[2][i];
+
+  bx = points->m[0][i+2] - points->m[0][i];
+  by = points->m[1][i+2] - points->m[1][i];
+  bz = points->m[2][i+2] - points->m[2][i];
+
+  //get the surface normal
+  normal = calculate_normal( ax, ay, az, bx, by, bz );
+  return normal;
+}
+
 /*======== double diffuse_multiplier() ==========
   Inputs:   double *normal
             double *light
@@ -172,8 +206,8 @@ double specular_multiplier(double *normal, double *light, double *view){
   tmp[2]=tmp[2]/mag;
   dot_product = tmp[0]*view[0] + tmp[1]*view[1] + tmp[2]*view[2];
   //Sharpening factor. High values will make reflections sharper. Arbitrary value
-  int sharp=4;
-  dot_product=pow(dot_product,3);
+  int sharp=5;
+  dot_product=pow(dot_product,sharp);
   return dot_product;
 }
 
@@ -198,7 +232,7 @@ struct vertex * calculate_vertex_normals( struct matrix *points) {
   struct vertex *unsorted=(struct vertex *)malloc(points->cols*sizeof(struct vertex));
   int i,j;
   for (i=0;i<points->lastcol;i+=3){
-    tmp1=calculate_surface_normal(points,i);
+    tmp1=calculate_surface_non_normalized(points,i);
     for (j=i;j<i+3;j++){
       unsorted[j].c[0]=(int)points->m[0][j];
       unsorted[j].c[1]=(int)points->m[1][j];
@@ -206,6 +240,7 @@ struct vertex * calculate_vertex_normals( struct matrix *points) {
       unsorted[j].n[0]=tmp1[0];
       unsorted[j].n[1]=tmp1[1];
       unsorted[j].n[2]=tmp1[2];
+      //printf("Coordinate: %d %d %d      Vector: %f %f %f\n",(int)points->m[0][j],(int)points->m[1][j],(int)points->m[2][j],tmp1[0],tmp1[1],tmp1[2]);
     }
     free(tmp1);
   }
@@ -230,9 +265,9 @@ struct vertex * calculate_vertex_normals( struct matrix *points) {
     }
     if (!present){
       //Add in the coordinates
-      sorted[index].c[0]=(int)unsorted[i].c[0];
-      sorted[index].c[1]=(int)unsorted[i].c[1];
-      sorted[index].c[2]=(int)unsorted[i].c[2];
+      sorted[index].c[0]=unsorted[i].c[0];
+      sorted[index].c[1]=unsorted[i].c[1];
+      sorted[index].c[2]=unsorted[i].c[2];
       //calculate the vertex normal
       for (j=i;j<points->cols;j++){
 	if (sorted[index].c[0] == unsorted[j].c[0] && sorted[index].c[1] == unsorted[j].c[1] && sorted[index].c[2] == unsorted[j].c[2]){
